@@ -8,7 +8,7 @@ services:
       - "8080:80/tcp"   # dashboard on 8080 so it doesn't clash with other services
     environment:
       TZ: America/Los_Angeles
-      WEBPASSWORD: ""   # put this in .env instead
+      WEBPASSWORD: ${WEBPASSWORD}
     volumes:
       - ./pihole/etc-pihole:/etc/pihole
       - ./pihole/etc-dnsmasq.d:/etc/dnsmasq.d
