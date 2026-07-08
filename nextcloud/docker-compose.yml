@@ -28,3 +28,13 @@ services:
     volumes:
       - /opt/nextcloud/html:/var/www/html
       - /opt/nextcloud/data:/var/www/html/data
+
+  metrics:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      NEXTCLOUD_DATA_ROOT: /data
+    volumes:
+      - /opt/nextcloud/data:/data:ro
