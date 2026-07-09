@@ -1,0 +1,11 @@
+services:
+  npm:
+    image: jc21/nginx-proxy-manager:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "81:81"   # NPM admin UI
+    volumes:
+      - /opt/npm/data:/data
+      - /opt/npm/letsencrypt:/etc/letsencrypt

@@ -1,0 +1,54 @@
+# Jellyfin (Sanguine) — bind-mount stack for a headless Ubuntu homelab host.
+#
+# Fill in before first `docker compose up`:
+#   1. PUID / PGID — run `id -u` and `id -g` on the host for the user that will own ./config and ./cache
+#   2. Media path — replace /path/to/media with the real local library path on the Lenovo (mounted :ro)
+#   3. Docker network — verify the external network name matches your existing stack (`docker network ls`)
+#   4. Image tag — check https://github.com/jellyfin/jellyfin/releases for the current stable version
+#
+# Mount points:
+#   ./config  → Jellyfin settings, database, metadata (read-write)
+#   ./cache   → transcode and image cache (read-write)
+#   /path/to/media → your library on the host disk (read-only)
+#
+# No custom Dockerfile: the official jellyfin/jellyfin image is used directly.
+# NPM should proxy to http://jellyfin:8096 on the shared Docker network (no 0.0.0.0 publish needed).
+
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:10.11.11
+    container_name: jellyfin
+    restart: unless-stopped
+    user: "${PUID:-1000}:${PGID:-1000}"
+    environment:
+      # Placeholders — override in a .env file next to this compose file.
+      # On the host: id -u <user>  and  id -g <user>
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: America/Los_Angeles
+      # Optional behind NPM — set to your MagicDNS hostname, e.g. https://jellyfin.tailnet-name.ts.net
+      # JELLYFIN_PublishedServerUrl: https://jellyfin.example.ts.net
+    volumes:
+      - ./config:/config
+      - ./cache:/cache
+      - /path/to/media:/media:ro
+    # Port 8096 is reachable by NPM via the shared Docker network (jellyfin:8096).
+    # Do NOT publish to 0.0.0.0 unless you intentionally want LAN/WAN exposure.
+    #
+    # If NPM cannot reach containers on homelab_default, uncomment ONE of the following instead:
+    #   - "127.0.0.1:8096:8096"                          # localhost only (SSH tunnel / local NPM)
+    #   - "100.x.x.x:8096:8096"                          # Tailscale IP only — replace 100.x.x.x
+    # ports:
+    #   - "127.0.0.1:8096:8096"
+    # Intel QuickSync hardware transcoding (optional):
+    # Run `ls -la /dev/dri` on the host first. If renderD128 exists, uncomment the block below and restart.
+    # If /dev/dri is missing or empty, leave this commented — Jellyfin will use CPU (software) transcoding.
+    # devices:
+    #   - /dev/dri:/dev/dri
+    networks:
+      - homelab_default
+
+networks:
+  homelab_default:
+    external: true
+    name: homelab_default
