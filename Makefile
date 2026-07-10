@@ -3,14 +3,16 @@
 
 COMPOSE := docker compose
 
-HORMAEUS  := src/Hormaeus Mora
-PERYITE   := src/Peryite
-SANGUINE  := src/Sanguine
+HORMAEUS   := src/Hormaeus Mora
+PERYITE    := src/Peryite
+SANGUINE   := src/Sanguine
+NORCTURNAL := src/Norcturnal
 SHEOGORATH := src/Sheogorath/mcp/public
 
 # Stacks included in make up / make down.
 # Sheogorath is omitted until its docker-compose.yml is non-empty.
-STACKS := hormaeus peryite sanguine
+# Norcturnal (nginx) is last on up so upstreams are resolvable at start.
+STACKS := hormaeus peryite sanguine norcturnal
 
 .DEFAULT_GOAL := help
 
@@ -18,6 +20,7 @@ STACKS := hormaeus peryite sanguine
 	up-hormaeus down-hormaeus \
 	up-peryite down-peryite \
 	up-sanguine down-sanguine \
+	up-norcturnal down-norcturnal \
 	up-sheogorath down-sheogorath \
 	ps
 
@@ -29,13 +32,15 @@ help:
 	@echo "  make down-<stack>       stop one stack"
 	@echo "  make ps                 show compose project status"
 	@echo ""
-	@echo "Stacks: hormaeus peryite sanguine sheogorath"
+	@echo "Stacks: hormaeus peryite sanguine norcturnal sheogorath"
 
 # --- all ---
+# Apps first, then nginx. Tear down nginx first so it is not left pointing at
+# stopped upstreams.
 
-up: up-hormaeus up-peryite up-sanguine
+up: up-hormaeus up-peryite up-sanguine up-norcturnal
 
-down: down-sanguine down-peryite down-hormaeus
+down: down-norcturnal down-sanguine down-peryite down-hormaeus
 
 # --- Hormaeus Mora (Nextcloud + MariaDB + metrics) ---
 
@@ -54,13 +59,22 @@ down-peryite:
 	$(COMPOSE) -f "$(PERYITE)/docker-compose.yml" --project-directory "$(PERYITE)" down
 
 # --- Sanguine (Jellyfin) ---
-# Localhost :8096 for Tailscale Serve; set a real media path in compose.
+# Reached via Norcturnal at /jellyfin; set a real media path in compose.
 
 up-sanguine:
 	$(COMPOSE) -f "$(SANGUINE)/docker-compose.yml" --project-directory "$(SANGUINE)" up -d
 
 down-sanguine:
 	$(COMPOSE) -f "$(SANGUINE)/docker-compose.yml" --project-directory "$(SANGUINE)" down
+
+# --- Norcturnal (nginx reverse proxy) ---
+# Path-based TLS proxy on Oblivion. Start after app stacks.
+
+up-norcturnal:
+	$(COMPOSE) -f "$(NORCTURNAL)/docker-compose.yml" --project-directory "$(NORCTURNAL)" up -d
+
+down-norcturnal:
+	$(COMPOSE) -f "$(NORCTURNAL)/docker-compose.yml" --project-directory "$(NORCTURNAL)" down
 
 # --- Sheogorath (MCP public) ---
 # Compose file is currently empty; targets exist for when it is filled in.
