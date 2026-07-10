@@ -1,2 +1,4 @@
 .env
 __pycache__/
+
+src/Sanguine/media/ # media files are not tracked, too big
