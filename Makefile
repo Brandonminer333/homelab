@@ -4,20 +4,18 @@
 COMPOSE := docker compose
 
 HORMAEUS  := src/Hormaeus Mora
-NOCTURNAL := src/Nocturnal
 PERYITE   := src/Peryite
 SANGUINE  := src/Sanguine
 SHEOGORATH := src/Sheogorath/mcp/public
 
 # Stacks included in make up / make down.
 # Sheogorath is omitted until its docker-compose.yml is non-empty.
-STACKS := hormaeus nocturnal peryite sanguine
+STACKS := hormaeus peryite sanguine
 
 .DEFAULT_GOAL := help
 
 .PHONY: help up down \
 	up-hormaeus down-hormaeus \
-	up-nocturnal down-nocturnal \
 	up-peryite down-peryite \
 	up-sanguine down-sanguine \
 	up-sheogorath down-sheogorath \
@@ -31,13 +29,13 @@ help:
 	@echo "  make down-<stack>       stop one stack"
 	@echo "  make ps                 show compose project status"
 	@echo ""
-	@echo "Stacks: hormaeus nocturnal peryite sanguine sheogorath"
+	@echo "Stacks: hormaeus peryite sanguine sheogorath"
 
 # --- all ---
 
-up: up-hormaeus up-nocturnal up-peryite up-sanguine
+up: up-hormaeus up-peryite up-sanguine
 
-down: down-sanguine down-peryite down-nocturnal down-hormaeus
+down: down-sanguine down-peryite down-hormaeus
 
 # --- Hormaeus Mora (Nextcloud + MariaDB + metrics) ---
 
@@ -46,14 +44,6 @@ up-hormaeus:
 
 down-hormaeus:
 	$(COMPOSE) -f "$(HORMAEUS)/docker-compose.yml" --project-directory "$(HORMAEUS)" down
-
-# --- Nocturnal (Nginx Proxy Manager) ---
-
-up-nocturnal:
-	$(COMPOSE) -f "$(NOCTURNAL)/docker-compose.yml" --project-directory "$(NOCTURNAL)" up -d
-
-down-nocturnal:
-	$(COMPOSE) -f "$(NOCTURNAL)/docker-compose.yml" --project-directory "$(NOCTURNAL)" down
 
 # --- Peryite (Pi-hole) ---
 
@@ -64,7 +54,7 @@ down-peryite:
 	$(COMPOSE) -f "$(PERYITE)/docker-compose.yml" --project-directory "$(PERYITE)" down
 
 # --- Sanguine (Jellyfin) ---
-# Requires external network homelab_default and a real media path in compose.
+# Localhost :8096 for Tailscale Serve; set a real media path in compose.
 
 up-sanguine:
 	$(COMPOSE) -f "$(SANGUINE)/docker-compose.yml" --project-directory "$(SANGUINE)" up -d
