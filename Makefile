@@ -6,13 +6,13 @@ COMPOSE := docker compose
 HORMAEUS   := src/Hormaeus Mora
 PERYITE    := src/Peryite
 SANGUINE   := src/Sanguine
-NORCTURNAL := src/Norcturnal
+NOCTURNAL  := src/Nocturnal
 SHEOGORATH := src/Sheogorath/mcp/public
 
 # Stacks included in make up / make down.
 # Sheogorath is omitted until its docker-compose.yml is non-empty.
-# Norcturnal (nginx) is last on up so upstreams are resolvable at start.
-STACKS := hormaeus peryite sanguine norcturnal
+# Nocturnal (nginx) is last on up so upstreams are resolvable at start.
+STACKS := hormaeus peryite sanguine nocturnal
 
 .DEFAULT_GOAL := help
 
@@ -20,7 +20,7 @@ STACKS := hormaeus peryite sanguine norcturnal
 	up-hormaeus down-hormaeus \
 	up-peryite down-peryite \
 	up-sanguine down-sanguine \
-	up-norcturnal down-norcturnal \
+	up-nocturnal down-nocturnal \
 	up-sheogorath down-sheogorath \
 	ps
 
@@ -32,15 +32,15 @@ help:
 	@echo "  make down-<stack>       stop one stack"
 	@echo "  make ps                 show compose project status"
 	@echo ""
-	@echo "Stacks: hormaeus peryite sanguine norcturnal sheogorath"
+	@echo "Stacks: hormaeus peryite sanguine nocturnal sheogorath"
 
 # --- all ---
 # Apps first, then nginx. Tear down nginx first so it is not left pointing at
 # stopped upstreams.
 
-up: up-hormaeus up-peryite up-sanguine up-norcturnal
+up: up-hormaeus up-peryite up-sanguine up-nocturnal
 
-down: down-norcturnal down-sanguine down-peryite down-hormaeus
+down: down-nocturnal down-sanguine down-peryite down-hormaeus
 
 # --- Hormaeus Mora (Nextcloud + MariaDB + metrics) ---
 
@@ -59,7 +59,7 @@ down-peryite:
 	$(COMPOSE) -f "$(PERYITE)/docker-compose.yml" --project-directory "$(PERYITE)" down
 
 # --- Sanguine (Jellyfin) ---
-# Reached via Norcturnal at /jellyfin; set a real media path in compose.
+# Reached via Nocturnal at /jellyfin; set a real media path in compose.
 
 up-sanguine:
 	$(COMPOSE) -f "$(SANGUINE)/docker-compose.yml" --project-directory "$(SANGUINE)" up -d
@@ -67,14 +67,14 @@ up-sanguine:
 down-sanguine:
 	$(COMPOSE) -f "$(SANGUINE)/docker-compose.yml" --project-directory "$(SANGUINE)" down
 
-# --- Norcturnal (nginx reverse proxy) ---
+# --- Nocturnal (nginx reverse proxy) ---
 # Path-based TLS proxy on Oblivion. Start after app stacks.
 
-up-norcturnal:
-	$(COMPOSE) -f "$(NORCTURNAL)/docker-compose.yml" --project-directory "$(NORCTURNAL)" up -d
+up-nocturnal:
+	$(COMPOSE) -f "$(NOCTURNAL)/docker-compose.yml" --project-directory "$(NOCTURNAL)" up -d
 
-down-norcturnal:
-	$(COMPOSE) -f "$(NORCTURNAL)/docker-compose.yml" --project-directory "$(NORCTURNAL)" down
+down-nocturnal:
+	$(COMPOSE) -f "$(NOCTURNAL)/docker-compose.yml" --project-directory "$(NOCTURNAL)" down
 
 # --- Sheogorath (MCP public) ---
 # Compose file is currently empty; targets exist for when it is filled in.
