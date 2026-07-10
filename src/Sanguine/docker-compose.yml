@@ -49,7 +49,7 @@ services:
     volumes:
       - ./config:/config
       - ./cache:/cache
-      - /path/to/media:/media:ro
+      - ./media:/media:ro
     # Localhost only — Tailscale Serve reaches this; LAN/WAN cannot.
     networks:
       - Oblivion
