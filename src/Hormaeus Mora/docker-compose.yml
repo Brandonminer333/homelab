@@ -2,6 +2,8 @@ services:
   db:
     image: mariadb:11
     restart: unless-stopped
+    networks:
+      - Oblivion
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: nextcloud
@@ -12,11 +14,12 @@ services:
 
   nextcloud:
     image: nextcloud:30-apache
+    container_name: HormaeusMora
     restart: unless-stopped
     depends_on:
       - db
-    ports:
-      - "8081:80"
+    networks:
+      - Oblivion
     environment:
       MYSQL_HOST: db
       MYSQL_DATABASE: nextcloud
@@ -25,6 +28,15 @@ services:
       NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER}
       NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD}
       NEXTCLOUD_TRUSTED_DOMAINS: ${NEXTCLOUD_TRUSTED_DOMAINS}
+      # Served behind nginx under the /nextcloud subpath on the Tailscale host.
+      OVERWRITEWEBROOT: /nextcloud
+      OVERWRITEPROTOCOL: https
+      OVERWRITEHOST: lenovoflakes.tail62b305.ts.net
+      OVERWRITECLIURL: https://lenovoflakes.tail62b305.ts.net/nextcloud
+      # nginx reaches this container over the Oblivion network; trust that subnet
+      # so Nextcloud honors X-Forwarded-* headers. Set to the actual Oblivion
+      # subnet (docker network inspect Oblivion) if it differs.
+      TRUSTED_PROXIES: ${NEXTCLOUD_TRUSTED_PROXIES:-172.16.0.0/12}
     volumes:
       - /opt/nextcloud/html:/var/www/html
       - /opt/nextcloud/data:/var/www/html/data
@@ -32,9 +44,16 @@ services:
   metrics:
     build: .
     restart: unless-stopped
+    networks:
+      - Oblivion  # for db connection
     ports:
       - "8501:8501"
     environment:
       NEXTCLOUD_DATA_ROOT: /data
     volumes:
       - /opt/nextcloud/data:/data:ro
+
+networks:
+  Oblivion:
+    external: true
+
