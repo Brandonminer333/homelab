@@ -2,8 +2,10 @@
 #
 # Fill in before first `docker compose up`:
 #   1. PUID / PGID — on the Lenovo: `id -u` and `id -g` for the user that owns ./config and ./data
-#   2. WIREGUARD_PRIVATE_KEY — Proton account → VPN → WireGuard → create config → copy PrivateKey
-#      https://account.proton.me/u/0/vpn/WireGuard
+#   2. WIREGUARD_PRIVATE_KEY — from your Proton *.conf [Interface] PrivateKey line only.
+#      Gluetun (protonvpn provider) does NOT mount the .conf. Ignore Address, DNS, and [Peer];
+#      Gluetun picks Proton servers itself. Example .env:
+#        WIREGUARD_PRIVATE_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx=
 #   3. Optional: SERVER_COUNTRIES (e.g. Netherlands) to pin exit country
 #
 # Layout:
