@@ -14,12 +14,12 @@
 #   ./data/torrents/completed     → finished downloads
 #
 # Access (localhost + SSH forward — not on Oblivion, not through Tailscale):
-#   WebUI is bound to 127.0.0.1:8085 on the Lenovo (published on the VPN container).
+#   WebUI is bound to 127.0.0.1:8080 on the Lenovo (published on the VPN container).
 #   From your laptop:
 #
-#     ssh -L 8085:localhost:8085 lenovo -N
+#     ssh -L 8080:localhost:8080 lenovoflakes -N
 #
-#   Then open http://localhost:8085
+#   Then open http://localhost:8080
 #
 # Network model:
 #   qBittorrent shares Gluetun's network namespace — all torrent + WebUI traffic
@@ -37,8 +37,9 @@ services:
       - /dev/net/tun:/dev/net/tun
     ports:
       # qBittorrent WebUI (container listens on 8080; host localhost only)
-      - "127.0.0.1:8085:8080"
+      - "127.0.0.1:8080:8080"
     environment:
+      LOG_LEVEL: debug  # Temporary for debugging
       TZ: America/Los_Angeles
       VPN_SERVICE_PROVIDER: protonvpn
       VPN_TYPE: wireguard

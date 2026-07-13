@@ -70,7 +70,7 @@ down-sanguine:
 	$(COMPOSE) -f "$(SANGUINE)/docker-compose.yml" --project-directory "$(SANGUINE)" down
 
 # --- Clavicus Vile (qBittorrent + Proton VPN via Gluetun) ---
-# Isolated from Oblivion; WebUI on 127.0.0.1:8085 (SSH forward).
+# Isolated from Oblivion; WebUI on 127.0.0.1:8080 (SSH forward).
 # Requires WIREGUARD_PRIVATE_KEY in src/Clavicus Vile/.env
 
 up-clavicus:
