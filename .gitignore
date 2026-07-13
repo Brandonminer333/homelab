@@ -2,3 +2,4 @@
 __pycache__/
 
 src/Sanguine/media/ # media files are not tracked, too big
+src/Clavicus Vile/data/ # torrent downloads are not tracked, too big

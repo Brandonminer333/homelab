@@ -1,0 +1,69 @@
+# qBittorrent behind Proton VPN (Clavicus Vile)
+#
+# Fill in before first `docker compose up`:
+#   1. PUID / PGID — on the Lenovo: `id -u` and `id -g` for the user that owns ./config and ./data
+#   2. WIREGUARD_PRIVATE_KEY — Proton account → VPN → WireGuard → create config → copy PrivateKey
+#      https://account.proton.me/u/0/vpn/WireGuard
+#   3. Optional: SERVER_COUNTRIES (e.g. Netherlands) to pin exit country
+#
+# Layout:
+#   ./config                      → qBittorrent settings (read-write)
+#   ./data/torrents/incomplete    → in-progress downloads
+#   ./data/torrents/completed     → finished downloads
+#
+# Access (localhost + SSH forward — not on Oblivion, not through Tailscale):
+#   WebUI is bound to 127.0.0.1:8085 on the Lenovo (published on the VPN container).
+#   From your laptop:
+#
+#     ssh -L 8085:localhost:8085 lenovo -N
+#
+#   Then open http://localhost:8085
+#
+# Network model:
+#   qBittorrent shares Gluetun's network namespace — all torrent + WebUI traffic
+#   egresses via Proton WireGuard. Laptop ↔ Lenovo SSH is outside the VPN.
+#   This stack does NOT join the Oblivion network.
+
+services:
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: ClavicusVile-vpn
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      # qBittorrent WebUI (container listens on 8080; host localhost only)
+      - "127.0.0.1:8085:8080"
+    environment:
+      TZ: America/Los_Angeles
+      VPN_SERVICE_PROVIDER: protonvpn
+      VPN_TYPE: wireguard
+      WIREGUARD_PRIVATE_KEY: ${WIREGUARD_PRIVATE_KEY}
+      # Optional — uncomment / set in .env to prefer a country, e.g. Netherlands
+      # SERVER_COUNTRIES: ${SERVER_COUNTRIES:-}
+      # Allow host → WebUI through Gluetun's firewall (published port above)
+      FIREWALL_INPUT_PORTS: 8080
+    volumes:
+      - ./gluetun:/gluetun
+
+  qbittorrent:
+    image: linuxserver/qbittorrent:latest
+    container_name: ClavicusVile
+    restart: unless-stopped
+    network_mode: service:gluetun
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: America/Los_Angeles
+      WEBUI_PORT: 8080
+      # Default paths inside the container; match the volume mounts below
+      TORRENTING_PORT: 6881
+    volumes:
+      - ./config:/config
+      - ./data/torrents/incomplete:/downloads/incomplete
+      - ./data/torrents/completed:/downloads/completed
