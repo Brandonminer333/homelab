@@ -1,4 +1,4 @@
-# qBittorrent behind Proton VPN (Clavicus Vile)
+# qBittorrent behind Proton VPN (Clavicus Vile) + Prowlarr
 #
 # Fill in before first `docker compose up`:
 #   1. PUID / PGID — on the Lenovo: `id -u` and `id -g` for the user that owns ./config and ./data
@@ -10,21 +10,28 @@
 #
 # Layout:
 #   ./config                      → qBittorrent settings (read-write)
+#   ./prowlarr/config             → Prowlarr settings (read-write)
 #   ./data/torrents/incomplete    → in-progress downloads
 #   ./data/torrents/completed     → finished downloads
 #
 # Access (localhost + SSH forward — not on Oblivion, not through Tailscale):
-#   WebUI is bound to 127.0.0.1:8080 on the Lenovo (published on the VPN container).
-#   From your laptop:
+#   qBittorrent WebUI → 127.0.0.1:8080 (published on the VPN container)
+#   Prowlarr WebUI    → 127.0.0.1:9696 (not on the VPN)
 #
-#     ssh -L 8080:localhost:8080 lenovoflakes -N
+#     ssh -L 8080:localhost:8080 -L 9696:localhost:9696 lenovoflakes -N
 #
-#   Then open http://localhost:8080
+#   Then open http://localhost:8080 and http://localhost:9696
 #
 # Network model:
-#   qBittorrent shares Gluetun's network namespace — all torrent + WebUI traffic
-#   egresses via Proton WireGuard. Laptop ↔ Lenovo SSH is outside the VPN.
+#   qBittorrent shares Gluetun's network namespace — torrent + its WebUI traffic
+#   egresses via Proton WireGuard. Prowlarr is outside the VPN (host/default
+#   network only). Laptop ↔ Lenovo SSH is outside the VPN.
 #   This stack does NOT join the Oblivion network.
+#
+# Note: Prowlarr cannot reach qBittorrent at 127.0.0.1:8080 from another
+# container while that port is localhost-bound on the host. To add qBittorrent
+# as a Prowlarr download client later, put Prowlarr on network_mode: service:gluetun
+# (and publish 9696 on Gluetun) so both share localhost.
 
 services:
   gluetun:
@@ -70,3 +77,17 @@ services:
       - ./config:/config
       - ./data/torrents/incomplete:/downloads/incomplete
       - ./data/torrents/completed:/downloads/completed
+
+  # Outside the VPN — indexer manager only. See header note about qBittorrent linking.
+  prowlarr:
+    image: linuxserver/prowlarr:latest
+    container_name: ClavicusVile-prowlarr
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9696:9696"
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: America/Los_Angeles
+    volumes:
+      - ./prowlarr/config:/config
