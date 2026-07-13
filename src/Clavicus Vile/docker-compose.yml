@@ -1,4 +1,4 @@
-# qBittorrent behind Proton VPN (Clavicus Vile) + Prowlarr
+# qBittorrent behind Proton VPN (Clavicus Vile) + Prowlarr + FlareSolverr
 #
 # Fill in before first `docker compose up`:
 #   1. PUID / PGID — on the Lenovo: `id -u` and `id -g` for the user that owns ./config and ./data
@@ -17,6 +17,7 @@
 # Access (localhost + SSH forward — not on Oblivion, not through Tailscale):
 #   qBittorrent WebUI → 127.0.0.1:8080 (published on the VPN container)
 #   Prowlarr WebUI    → 127.0.0.1:9696 (not on the VPN)
+#   FlareSolverr      → no host UI; Prowlarr reaches it at http://flaresolverr:8191
 #
 #     ssh -L 8080:localhost:8080 -L 9696:localhost:9696 lenovoflakes -N
 #
@@ -24,9 +25,14 @@
 #
 # Network model:
 #   qBittorrent shares Gluetun's network namespace — torrent + its WebUI traffic
-#   egresses via Proton WireGuard. Prowlarr is outside the VPN (host/default
-#   network only). Laptop ↔ Lenovo SSH is outside the VPN.
+#   egresses via Proton WireGuard. Prowlarr + FlareSolverr share the compose
+#   default network (outside the VPN) so Prowlarr can use FlareSolverr.
 #   This stack does NOT join the Oblivion network.
+#
+# Prowlarr setup:
+#   Settings → Indexers → Indexer Proxies → add FlareSolverr
+#   Host: http://flaresolverr:8191
+#   Tag indexers that need Cloudflare bypass with that proxy tag.
 #
 # Note: Prowlarr cannot reach qBittorrent at 127.0.0.1:8080 from another
 # container while that port is localhost-bound on the host. To add qBittorrent
@@ -46,7 +52,6 @@ services:
       # qBittorrent WebUI (container listens on 8080; host localhost only)
       - "127.0.0.1:8080:8080"
     environment:
-      LOG_LEVEL: debug  # Temporary for debugging
       TZ: America/Los_Angeles
       VPN_SERVICE_PROVIDER: protonvpn
       VPN_TYPE: wireguard
@@ -71,18 +76,19 @@ services:
       PGID: ${PGID:-1000}
       TZ: America/Los_Angeles
       WEBUI_PORT: 8080
-      # Default paths inside the container; match the volume mounts below
       TORRENTING_PORT: 6881
     volumes:
       - ./config:/config
       - ./data/torrents/incomplete:/downloads/incomplete
       - ./data/torrents/completed:/downloads/completed
 
-  # Outside the VPN — indexer manager only. See header note about qBittorrent linking.
+  # Outside the VPN — indexer manager. See header note about qBittorrent linking.
   prowlarr:
     image: linuxserver/prowlarr:latest
     container_name: ClavicusVile-prowlarr
     restart: unless-stopped
+    depends_on:
+      - flaresolverr
     ports:
       - "127.0.0.1:9696:9696"
     environment:
@@ -91,3 +97,13 @@ services:
       TZ: America/Los_Angeles
     volumes:
       - ./prowlarr/config:/config
+
+  # Outside the VPN — Cloudflare bypass for Prowlarr (same compose network).
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: ClavicusVile-flaresolverr
+    restart: unless-stopped
+    environment:
+      LOG_LEVEL: info
+      TZ: America/Los_Angeles
+    # No host ports — Prowlarr uses http://flaresolverr:8191 on the compose network.
