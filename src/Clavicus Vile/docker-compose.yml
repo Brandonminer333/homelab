@@ -15,29 +15,23 @@
 #   ./data/torrents/completed     → finished downloads
 #
 # Access (localhost + SSH forward — not on Oblivion, not through Tailscale):
-#   qBittorrent WebUI → 127.0.0.1:8080 (published on the VPN container)
-#   Prowlarr WebUI    → 127.0.0.1:9696 (not on the VPN)
-#   FlareSolverr      → no host UI; Prowlarr reaches it at http://flaresolverr:8191
+#   qBittorrent WebUI → 127.0.0.1:8080
+#   Prowlarr WebUI    → 127.0.0.1:9696
+#   FlareSolverr      → no host UI; Prowlarr reaches it at http://127.0.0.1:8191
 #
 #     ssh -L 8080:localhost:8080 -L 9696:localhost:9696 lenovoflakes -N
 #
 #   Then open http://localhost:8080 and http://localhost:9696
 #
 # Network model:
-#   qBittorrent shares Gluetun's network namespace — torrent + its WebUI traffic
-#   egresses via Proton WireGuard. Prowlarr + FlareSolverr share the compose
-#   default network (outside the VPN) so Prowlarr can use FlareSolverr.
+#   qBittorrent, Prowlarr, and FlareSolverr all share Gluetun's network namespace
+#   so they can reach each other on localhost. Egress is via Proton WireGuard.
 #   This stack does NOT join the Oblivion network.
 #
 # Prowlarr setup:
-#   Settings → Indexers → Indexer Proxies → add FlareSolverr
-#   Host: http://flaresolverr:8191
+#   Download client → qBittorrent: http://127.0.0.1:8080
+#   Indexer proxy  → FlareSolverr: http://127.0.0.1:8191
 #   Tag indexers that need Cloudflare bypass with that proxy tag.
-#
-# Note: Prowlarr cannot reach qBittorrent at 127.0.0.1:8080 from another
-# container while that port is localhost-bound on the host. To add qBittorrent
-# as a Prowlarr download client later, put Prowlarr on network_mode: service:gluetun
-# (and publish 9696 on Gluetun) so both share localhost.
 
 services:
   gluetun:
@@ -49,8 +43,9 @@ services:
     devices:
       - /dev/net/tun:/dev/net/tun
     ports:
-      # qBittorrent WebUI (container listens on 8080; host localhost only)
-      - "127.0.0.1:8080:8080"
+      # Published on Gluetun because siblings use network_mode: service:gluetun
+      - "127.0.0.1:8080:8080"   # qBittorrent WebUI
+      - "127.0.0.1:9696:9696"   # Prowlarr WebUI
     environment:
       TZ: America/Los_Angeles
       VPN_SERVICE_PROVIDER: protonvpn
@@ -58,8 +53,8 @@ services:
       WIREGUARD_PRIVATE_KEY: ${WIREGUARD_PRIVATE_KEY}
       # Optional — uncomment / set in .env to prefer a country, e.g. Netherlands
       # SERVER_COUNTRIES: ${SERVER_COUNTRIES:-}
-      # Allow host → WebUI through Gluetun's firewall (published port above)
-      FIREWALL_INPUT_PORTS: 8080
+      # Allow host → WebUIs through Gluetun's firewall
+      FIREWALL_INPUT_PORTS: 8080,9696
     volumes:
       - ./gluetun:/gluetun
 
@@ -82,15 +77,16 @@ services:
       - ./data/torrents/incomplete:/downloads/incomplete
       - ./data/torrents/completed:/downloads/completed
 
-  # Outside the VPN — indexer manager. See header note about qBittorrent linking.
   prowlarr:
     image: linuxserver/prowlarr:latest
     container_name: ClavicusVile-prowlarr
     restart: unless-stopped
+    network_mode: service:gluetun
     depends_on:
-      - flaresolverr
-    ports:
-      - "127.0.0.1:9696:9696"
+      gluetun:
+        condition: service_healthy
+      flaresolverr:
+        condition: service_started
     environment:
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}
@@ -98,12 +94,14 @@ services:
     volumes:
       - ./prowlarr/config:/config
 
-  # Outside the VPN — Cloudflare bypass for Prowlarr (same compose network).
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: ClavicusVile-flaresolverr
     restart: unless-stopped
+    network_mode: service:gluetun
+    depends_on:
+      gluetun:
+        condition: service_healthy
     environment:
       LOG_LEVEL: info
       TZ: America/Los_Angeles
-    # No host ports — Prowlarr uses http://flaresolverr:8191 on the compose network.
