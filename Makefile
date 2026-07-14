@@ -72,9 +72,15 @@ down-sanguine:
 # --- Clavicus Vile (qBittorrent + Proton VPN via Gluetun) ---
 # Isolated from Oblivion; WebUI on 127.0.0.1:8080 (SSH forward).
 # Requires WIREGUARD_PRIVATE_KEY in src/Clavicus Vile/.env
+# After up, runs vpn-security-check.sh; tears the stack down on failure.
 
 up-clavicus:
 	$(COMPOSE) -f "$(CLAVICUS)/docker-compose.yml" --project-directory "$(CLAVICUS)" up -d
+	@bash "$(CLAVICUS)/vpn-security-check.sh" || ( \
+		echo "VPN security check failed — shutting down Clavicus Vile"; \
+		$(COMPOSE) -f "$(CLAVICUS)/docker-compose.yml" --project-directory "$(CLAVICUS)" down; \
+		exit 1; \
+	)
 
 down-clavicus:
 	$(COMPOSE) -f "$(CLAVICUS)/docker-compose.yml" --project-directory "$(CLAVICUS)" down
