@@ -6,7 +6,11 @@
 #      Gluetun (protonvpn provider) does NOT mount the .conf. Ignore Address, DNS, and [Peer];
 #      Gluetun picks Proton servers itself. Example .env:
 #        WIREGUARD_PRIVATE_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx=
+#      For VPN port forwarding: when creating the WireGuard config in Proton, enable
+#      NAT-PMP (and use a Plus/Visionary plan). Without that, PF will fail.
 #   3. Optional: SERVER_COUNTRIES (e.g. Netherlands) to pin exit country
+#   4. qBittorrent WebUI → enable "Bypass authentication for clients on localhost"
+#      so Gluetun can push the forwarded listen port via the WebUI API.
 #
 # Layout:
 #   ./config                      → qBittorrent settings (read-write)
@@ -53,8 +57,13 @@ services:
       WIREGUARD_PRIVATE_KEY: ${WIREGUARD_PRIVATE_KEY}
       # Optional — uncomment / set in .env to prefer a country, e.g. Netherlands
       # SERVER_COUNTRIES: ${SERVER_COUNTRIES:-}
-      # Allow host → WebUIs through Gluetun's firewall
-      FIREWALL_INPUT_PORTS: 8080,9696
+      # Allow host → WebUIs / local torrent port through Gluetun's firewall
+      FIREWALL_INPUT_PORTS: 8080,9696,6881
+      # Proton VPN server-side port forwarding (random public port → qBittorrent)
+      VPN_PORT_FORWARDING: "on"
+      PORT_FORWARD_ONLY: "on"
+      VPN_PORT_FORWARDING_UP_COMMAND: /bin/sh -c 'wget -O- -nv --retry-connrefused --post-data "json={\"listen_port\":{{PORT}},\"current_network_interface\":\"{{VPN_INTERFACE}}\",\"random_port\":false,\"upnp\":false}" http://127.0.0.1:8080/api/v2/app/setPreferences'
+      VPN_PORT_FORWARDING_DOWN_COMMAND: /bin/sh -c 'wget -O- -nv --retry-connrefused --post-data "json={\"listen_port\":0,\"current_network_interface\":\"lo\"}" http://127.0.0.1:8080/api/v2/app/setPreferences'
     volumes:
       - ./gluetun:/gluetun
 
