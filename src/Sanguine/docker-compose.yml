@@ -2,13 +2,13 @@
 #
 # Fill in before first `docker compose up`:
 #   1. PUID / PGID — run `id -u` and `id -g` on the host for the user that will own ./config and ./cache
-#   2. Media path — replace /path/to/media with the real local library path on the Lenovo (mounted :ro)
-#   3. Image tag — check https://github.com/jellyfin/jellyfin/releases for the current stable version
+#   2. Image tag — check https://github.com/jellyfin/jellyfin/releases for the current stable version
 #
 # Mount points:
-#   ./config  → Jellyfin settings, database, metadata (read-write)
-#   ./cache   → transcode and image cache (read-write)
-#   /path/to/media → your library on the host disk (read-only)
+#   ./config        → Jellyfin settings, database, metadata (read-write)
+#   ./cache         → transcode and image cache (read-write)
+#   ./media/music   → music library (read-only)  → /media/music
+#   ./media/videos  → video library (read-only) → /media/videos
 #
 # Access (Tailscale Serve — tailnet only, no NPM):
 #   Jellyfin is bound to 127.0.0.1:8096 on the Lenovo. On that host, after the
@@ -49,7 +49,8 @@ services:
     volumes:
       - ./config:/config
       - ./cache:/cache
-      - ./media:/media:ro
+      - ./media/music:/media/music:ro
+      - ./media/videos:/media/videos:ro
     # Localhost only — Tailscale Serve reaches this; LAN/WAN cannot.
     networks:
       - Oblivion
