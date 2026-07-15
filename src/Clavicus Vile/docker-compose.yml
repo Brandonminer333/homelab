@@ -59,7 +59,7 @@ services:
       # Optional — uncomment / set in .env to prefer a country, e.g. Netherlands
       # SERVER_COUNTRIES: ${SERVER_COUNTRIES:-}
       # Allow host → WebUIs / local torrent port through Gluetun's firewall
-      FIREWALL_INPUT_PORTS: 8080,9696,6881
+      FIREWALL_INPUT_PORTS: 8080,9696
       # Proton VPN server-side port forwarding (random public port → qBittorrent)
       VPN_PORT_FORWARDING: "on"
       PORT_FORWARD_ONLY: "on"
