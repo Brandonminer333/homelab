@@ -17,6 +17,11 @@ In qBittorrent WebUI options, enable **Bypass authentication for clients on loca
 
 Confirm: `docker logs ClavicusVile-vpn 2>&1 | grep -i "port forward"`
 
+## Paths
+
+Torrent files persist under `src/Clavicus Vile/data/torrents` (`/downloads` in the container).
+In qBittorrent, keep default save path as `/downloads` (or `/downloads/completed` + incomplete `/downloads/incomplete`).
+
 ## Prowlarr links (same VPN network namespace → use localhost)
 
 - Download client → qBittorrent: `http://127.0.0.1:8080`

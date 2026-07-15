@@ -12,10 +12,11 @@
 #   4. qBittorrent WebUI → enable "Bypass authentication for clients on localhost"
 #      so Gluetun can push the forwarded listen port via the WebUI API.
 #
-# Layout:
+# Layout (host paths under src/Clavicus Vile/):
 #   ./config                      → qBittorrent settings (read-write)
 #   ./prowlarr/config             → Prowlarr settings (read-write)
-#   ./data/torrents/incomplete    → in-progress downloads
+#   ./data/torrents               → all torrent I/O (mounted as /downloads)
+#   ./data/torrents/incomplete    → in-progress (set in qBittorrent if used)
 #   ./data/torrents/completed     → finished downloads
 #
 # Access (localhost + SSH forward — not on Oblivion, not through Tailscale):
@@ -83,8 +84,8 @@ services:
       TORRENTING_PORT: 6881
     volumes:
       - ./config:/config
-      - ./data/torrents/incomplete:/downloads/incomplete
-      - ./data/torrents/completed:/downloads/completed
+      # Single mount so default SavePath /downloads lands in ./data/torrents
+      - ./data/torrents:/downloads
 
   prowlarr:
     image: linuxserver/prowlarr:latest
