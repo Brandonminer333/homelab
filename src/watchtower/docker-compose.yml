@@ -27,6 +27,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
+      # containrrr/watchtower defaults to API 1.25; Docker Engine ≥20.10 needs ≥1.40.
+      DOCKER_API_VERSION: "1.40"
       # Notify on image updates via self-hosted ntfy (HTTP on the homelab net).
       # SKIP_TITLE keeps the ?title= query param from being overwritten.
       WATCHTOWER_NOTIFICATIONS: shoutrrr
