@@ -13,7 +13,6 @@ Hostname: `lenovoflakes.tail62b305.ts.net` (Tailscale MagicDNS).
 | 8445  | Pi-hole admin        | nginx → pihole | `https://lenovoflakes.tail62b305.ts.net:8445/admin/` |
 | 25565 | Minecraft            | minecraft   | `lenovoflakes.tail62b305.ts.net:25565` |
 | 2586  | ntfy                 | ntfy        | `http://lenovoflakes.tail62b305.ts.net:2586` |
-| 8501  | Nextcloud metrics    | nextcloud   | Streamlit; prefer SSH tunnel |
 
 ## Localhost-only (SSH tunnel)
 

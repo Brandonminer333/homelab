@@ -18,12 +18,6 @@ Pi-hole ad blocker — `https://lenovoflakes.tail62b305.ts.net:8445/admin/`
 
 Local Database, Nextcloud — `https://lenovoflakes.tail62b305.ts.net:8444/`
 
-### Nextcloud dev log
-
-`ssh -L 8501:localhost:8501 lenovo -N` 
-
-[http://localhost:8501](http://localhost:8501)
-
 ## jellyfin
 
 Jellyfin Media Container — `https://lenovoflakes.tail62b305.ts.net:8443/`
