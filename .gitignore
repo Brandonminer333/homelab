@@ -4,7 +4,5 @@ __pycache__/
 src/Sanguine/media/ # media files are not tracked, too big
 src/Clavicus Vile/data/ # torrent downloads are not tracked, too big
 
-src/minecraft/  # Not implementing yet
-# minecraft/mc-data/** # world saves / server data — keep directory via .gitkeep
-# !minecraft/mc-data/.gitkeep
-
+minecraft/mc-data/** # world saves / server data — keep directory via .gitkeep
+!minecraft/mc-data/.gitkeep
