@@ -1,18 +1,21 @@
 services:
   nginx:
     image: nginx:latest
-    container_name: Nocturnal
+    container_name: nginx
     restart: unless-stopped
     ports:
-      - "443:443"
-      - "80:80"   # optional: for HTTP->HTTPS redirect
+      - "80:80"     # HTTP -> HTTPS redirect (landing)
+      - "443:443"   # landing page
+      - "8443:8443" # Jellyfin
+      - "8444:8444" # Nextcloud
+      - "8445:8445" # Pi-hole
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./conf.d:/etc/nginx/conf.d:ro
       - /home/branflakes/.tailscale-auth:/etc/nginx/certs:ro
     networks:
-      - Oblivion
+      - homelab
 
 networks:
-  Oblivion:
+  homelab:
     external: true

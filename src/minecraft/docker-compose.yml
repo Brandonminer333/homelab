@@ -1,0 +1,52 @@
+# Minecraft server (itzg/minecraft-server)
+#
+# Fill in before first `docker compose up`:
+#   1. Optional: set VERSION to a pin (e.g. "1.21.8") instead of LATEST
+#   2. Optional: change TYPE to PAPER / FABRIC / FORGE / etc.
+#   3. Optional: MOTD, DIFFICULTY, MODE, MAX_PLAYERS below
+#
+# Layout:
+#   ./mc-data → world saves, server.properties, logs (read-write)
+#
+# Access (Tailscale — game protocol, not via nginx):
+#   In the Minecraft client, Multiplayer → Add Server:
+#     Server Address: lenovoflakes.tail62b305.ts.net
+#   Default port 25565 is assumed; use host:25565 only if you change the port.
+#
+#   Do NOT put Minecraft behind the nginx reverse proxy — it is TCP game
+#   traffic, not HTTP. Publish 25565 and reach it over Tailscale (or LAN).
+#
+# Ops:
+#   docker compose up -d
+#   docker compose logs -f minecraft
+#   docker attach minecraft-server   # console (Ctrl-p Ctrl-q to detach)
+#   docker compose down              # clean stop; allow stop_grace_period
+
+services:
+  minecraft:
+    image: itzg/minecraft-server:latest
+    container_name: minecraft-server
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+    stop_grace_period: 1m
+    ports:
+      - "25565:25565"
+    environment:
+      EULA: "TRUE"
+      TYPE: VANILLA
+      VERSION: LATEST
+      MEMORY: 2G
+      USE_AIKAR_FLAGS: "true"
+      TZ: America/Los_Angeles
+      UID: ${PUID:-1000}
+      GID: ${PGID:-1000}
+      MOTD: "Homelab Minecraft"
+      DIFFICULTY: normal
+      MODE: survival
+      MAX_PLAYERS: 10
+      ENABLE_RCON: "false"
+      VIEW_DISTANCE: 10
+      SIMULATION_DISTANCE: 8
+    volumes:
+      - ./mc-data:/data

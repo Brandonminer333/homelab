@@ -9,11 +9,12 @@ SANGUINE   := src/Sanguine
 CLAVICUS   := src/Clavicus Vile
 NOCTURNAL  := src/Nocturnal
 SHEOGORATH := src/Sheogorath/mcp/public
+MINECRAFT  := minecraft
 
 # Stacks included in make up / make down.
 # Sheogorath is omitted until its docker-compose.yml is non-empty.
 # Nocturnal (nginx) is last on up so upstreams are resolvable at start.
-STACKS := hormaeus peryite sanguine clavicus nocturnal
+STACKS := hormaeus peryite sanguine clavicus minecraft nocturnal
 
 .DEFAULT_GOAL := help
 
@@ -22,6 +23,7 @@ STACKS := hormaeus peryite sanguine clavicus nocturnal
 	up-peryite down-peryite \
 	up-sanguine down-sanguine \
 	up-clavicus down-clavicus \
+	up-minecraft down-minecraft \
 	up-nocturnal down-nocturnal \
 	up-sheogorath down-sheogorath \
 	ps
@@ -34,15 +36,15 @@ help:
 	@echo "  make down-<stack>       stop one stack"
 	@echo "  make ps                 show compose project status"
 	@echo ""
-	@echo "Stacks: hormaeus peryite sanguine clavicus nocturnal sheogorath"
+	@echo "Stacks: hormaeus peryite sanguine clavicus minecraft nocturnal sheogorath"
 
 # --- all ---
 # Apps first, then nginx. Tear down nginx first so it is not left pointing at
 # stopped upstreams.
 
-up: up-hormaeus up-peryite up-sanguine up-clavicus up-nocturnal
+up: up-hormaeus up-peryite up-sanguine up-clavicus up-minecraft up-nocturnal
 
-down: down-nocturnal down-clavicus down-sanguine down-peryite down-hormaeus
+down: down-nocturnal down-minecraft down-clavicus down-sanguine down-peryite down-hormaeus
 
 # --- Hormaeus Mora (Nextcloud + MariaDB + metrics) ---
 
@@ -61,7 +63,7 @@ down-peryite:
 	$(COMPOSE) -f "$(PERYITE)/docker-compose.yml" --project-directory "$(PERYITE)" down
 
 # --- Sanguine (Jellyfin) ---
-# Reached via Nocturnal at /jellyfin; set a real media path in compose.
+# Reached via nginx at https://lenovoflakes.tail62b305.ts.net:8443/
 
 up-sanguine:
 	$(COMPOSE) -f "$(SANGUINE)/docker-compose.yml" --project-directory "$(SANGUINE)" up -d
@@ -84,6 +86,15 @@ up-clavicus:
 
 down-clavicus:
 	$(COMPOSE) -f "$(CLAVICUS)/docker-compose.yml" --project-directory "$(CLAVICUS)" down
+
+# --- Minecraft (itzg/minecraft-server) ---
+# Vanilla server on :25565; join via Tailscale MagicDNS (not Nocturnal).
+
+up-minecraft:
+	$(COMPOSE) -f "$(MINECRAFT)/docker-compose.yml" --project-directory "$(MINECRAFT)" up -d
+
+down-minecraft:
+	$(COMPOSE) -f "$(MINECRAFT)/docker-compose.yml" --project-directory "$(MINECRAFT)" down
 
 # --- Nocturnal (nginx reverse proxy) ---
 # Path-based TLS proxy on Oblivion. Start after app stacks.

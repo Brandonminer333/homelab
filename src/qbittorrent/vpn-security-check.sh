@@ -2,7 +2,7 @@
 #
 # vpn-security-check.sh
 #
-# Sanity checks for the Gluetun/qBittorrent/Prowlarr stack (ClavicusVile).
+# Sanity checks for the Gluetun/qBittorrent/Prowlarr stack.
 # Verifies the VPN tunnel, DNS resolution, IPv6 exposure, and WebUI binding.
 #
 # Usage:
@@ -17,8 +17,8 @@
 
 set -uo pipefail
 
-GLUETUN_CONTAINER="${GLUETUN_CONTAINER:-ClavicusVile-vpn}"
-QBIT_CONTAINER="${QBIT_CONTAINER:-ClavicusVile}"
+GLUETUN_CONTAINER="${GLUETUN_CONTAINER:-gluetun}"
+QBIT_CONTAINER="${QBIT_CONTAINER:-qbittorrent}"
 WAIT_HEALTHY_SECS="${WAIT_HEALTHY_SECS:-120}"
 RUN_KILLSWITCH_TEST=false
 GLUETUN_PAUSED=false

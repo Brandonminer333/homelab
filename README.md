@@ -1,6 +1,6 @@
 # Homelab
 
-## Jyggalag / Sheogorath
+## llm
 
 Local AI and MCP
 
@@ -10,13 +10,13 @@ Local AI and MCP
 
 #### Private
 
-## Peryite
+## pihole
 
-Pi-hole ad blocker
+Pi-hole ad blocker — `https://lenovoflakes.tail62b305.ts.net:8445/admin/`
 
-## Hormaeus Mora
+## nextcloud
 
-Local Database, Nextcloud
+Local Database, Nextcloud — `https://lenovoflakes.tail62b305.ts.net:8444/`
 
 ### Nextcloud dev log
 
@@ -24,46 +24,50 @@ Local Database, Nextcloud
 
 [http://localhost:8501](http://localhost:8501)
 
-## Sanguine
+## jellyfin
 
-Jellyfin Media Container
+Jellyfin Media Container — `https://lenovoflakes.tail62b305.ts.net:8443/`
 
-## Source (Daedric Princes)
+## qbittorrent
 
-- Azura – The Prince of egotism and vanity, who draws power from the worship of beauty and the balance of dawn and dusk.
+qBittorrent + Prowlarr + FlareSolverr behind Proton VPN (Gluetun)
 
-- Boethiah – The Prince of deceit, cruelty, torture, secrecy, conspiracy, treason and unlawful overthrow of authority.
+## nginx
 
-- Clavicus Vile – The "consummate politician" of Oblivion, the Prince of deals, pacts, power, bargains, and serenity through wish fulfillment.
+Reverse proxy (Tailscale TLS). Landing at `:443`; apps on `:8443` (Jellyfin), `:8444` (Nextcloud), `:8445` (Pi-hole).
 
-- Hermaeus Mora – The formless Daedric Prince of forbidden knowledge and memory, seeks to possess all that is knowable.
+## minecraft
 
-- Hircine – The Prince of the hunt, sport, the Great Game, and the Chase.
+Vanilla Minecraft server (`itzg/minecraft-server`) on port 25565.
 
-- Ithelia – The Prince of paths, the untraveled road, the unseen and fate-changer.
+```bash
+cd minecraft && docker compose up -d
+```
 
-- Jyggalag – The Prince of order and deduction, who must uphold strict order above all else.
+Join from the Minecraft client: `lenovoflakes.tail62b305.ts.net` (Tailscale). World data lives in `minecraft/mc-data/`.
 
-- Malacath – The Prince of lies, deception and hypocrisy, whose sphere is the patronage of the spurned and ostracized.
+## watchtower
 
-- Mehrunes Dagon – The Prince of destruction, violent upheaval, energy, and mortal ambition.
+Image updates (Watchtower) + git-sync (pull remote commits and recreate stacks).
 
-- Mephala – The Prince of murder, plots and obfuscation, manipulation, and discord.
+```bash
+cd src/watchtower
+cp .env.example .env   # set HOMELAB_PATH to the host clone
+docker compose up -d --build
+```
 
-- Meridia – The Prince of greed, the energies of all living things, enemy of the undead and those who disrupt the flow of life.
+Add `com.centurylinklabs.watchtower.enable=true` to any service whose image should auto-update. git-sync polls `origin`, fast-forward pulls, then runs `docker compose down` / `up -d` for every stack except watchtower itself.
 
-- Molag Bal – The power-mad Prince of domination and spiritual enslavement, obsessed with subsuming Tamriel into his Plane of Oblivion.
+Watchtower posts to ntfy on image updates; git-sync posts on `compose up` failures (and merge failures).
 
-- Namira – The Prince of hunger and the "ancient darkness," the patron of all things considered repulsive.
+## ntfy
 
-- Nocturnal – The Prince of the night, darkness and mystery, the patron of all things secretive.
+Self-hosted push notifications on port **2586** (auth off; Tailscale only). Default topic: `homelab`.
 
-- Peryite – The Taskmaster, the Prince of pestilence and plague, desires order in his domain.
+```bash
+cd src/ntfy && docker compose up -d
+```
 
-- Sanguine – The Prince of hedonism, debauchery, lust, perversity and unnatural sexual relations, the further indulgences of one's darker nature.
-
-- Sheogorath – The infamous Prince of madness, chaos and lunacy, whose motives are unknowable.
-
-- Vaermina – The Prince of corruption and decay, dreams and nightmares, a deliverer of evil omens and dark portents.
-
-[source](https://elderscrolls.fandom.com/wiki/Daedric_Princes)
+- Server: `http://lenovoflakes.tail62b305.ts.net:2586`
+- Subscribe (phone app): add that server, topic `homelab`
+- Publish: `curl -d "hello" http://lenovoflakes.tail62b305.ts.net:2586/homelab`

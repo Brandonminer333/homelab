@@ -1,4 +1,4 @@
-# qBittorrent behind Proton VPN (Clavicus Vile) + Prowlarr + FlareSolverr
+# qBittorrent behind Proton VPN (Gluetun) + Prowlarr + FlareSolverr
 #
 # Fill in before first `docker compose up`:
 #   1. PUID / PGID — on the Lenovo: `id -u` and `id -g` for the user that owns ./config and ./data
@@ -12,14 +12,12 @@
 #   4. qBittorrent WebUI → enable "Bypass authentication for clients on localhost"
 #      so Gluetun can push the forwarded listen port via the WebUI API.
 #
-# Layout (host paths under src/Clavicus Vile/):
+# Layout (host paths under src/qbittorrent/):
 #   ./config                      → qBittorrent settings (read-write)
 #   ./prowlarr/config             → Prowlarr settings (read-write)
 #   ./data/torrents               → all torrent I/O (mounted as /downloads)
-#   ./data/torrents/incomplete    → in-progress (set in qBittorrent if used)
-#   ./data/torrents/completed     → finished downloads
 #
-# Access (localhost + SSH forward — not on Oblivion, not through Tailscale):
+# Access (localhost + SSH forward — not on homelab network, not through Tailscale):
 #   qBittorrent WebUI → 127.0.0.1:8080
 #   Prowlarr WebUI    → 127.0.0.1:9696
 #   FlareSolverr      → no host UI; Prowlarr reaches it at http://127.0.0.1:8191
@@ -31,7 +29,7 @@
 # Network model:
 #   qBittorrent, Prowlarr, and FlareSolverr all share Gluetun's network namespace
 #   so they can reach each other on localhost. Egress is via Proton WireGuard.
-#   This stack does NOT join the Oblivion network.
+#   This stack does NOT join the homelab network.
 #
 # Prowlarr setup:
 #   Download client → qBittorrent: http://127.0.0.1:8080
@@ -41,7 +39,7 @@
 services:
   gluetun:
     image: qmcgaw/gluetun:latest
-    container_name: ClavicusVile-vpn
+    container_name: gluetun
     restart: unless-stopped
     cap_add:
       - NET_ADMIN
@@ -70,7 +68,7 @@ services:
 
   qbittorrent:
     image: linuxserver/qbittorrent:latest
-    container_name: ClavicusVile
+    container_name: qbittorrent
     restart: unless-stopped
     network_mode: service:gluetun
     depends_on:
@@ -89,7 +87,7 @@ services:
 
   prowlarr:
     image: linuxserver/prowlarr:latest
-    container_name: ClavicusVile-prowlarr
+    container_name: prowlarr
     restart: unless-stopped
     network_mode: service:gluetun
     depends_on:
@@ -106,7 +104,7 @@ services:
 
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
-    container_name: ClavicusVile-flaresolverr
+    container_name: flaresolverr
     restart: unless-stopped
     network_mode: service:gluetun
     depends_on:

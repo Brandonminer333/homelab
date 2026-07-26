@@ -1,9 +1,14 @@
+# Pi-hole — DNS + admin UI on the homelab Docker network.
+#
+# Admin UI (via nginx): https://lenovoflakes.tail62b305.ts.net:8445/admin/
+# DNS (port 53) is not proxied; publish it on the host if this box is your resolver.
+
 services:
   pihole:
     image: pihole/pihole:latest
-    container_name: Peryite
+    container_name: pihole
     networks:
-      - Oblivion
+      - homelab
     environment:
       TZ: America/Los_Angeles
       WEBPASSWORD: ${WEBPASSWORD}
@@ -13,5 +18,5 @@ services:
     restart: unless-stopped
 
 networks:
-  Oblivion:
+  homelab:
     external: true

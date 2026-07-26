@@ -1,0 +1,37 @@
+# ntfy — self-hosted push notifications (auth off; Tailscale is the gate).
+#
+# Access (Tailscale — direct port, not via nginx):
+#   Server:  http://lenovoflakes.tail62b305.ts.net:2586
+#   Topic:   http://lenovoflakes.tail62b305.ts.net:2586/homelab
+#
+# Phone: add that server URL in the ntfy app, subscribe to topic `homelab`.
+# Publish (from another container on the homelab network):
+#   curl -d "hello" http://ntfy/homelab
+#
+# Start:
+#   cd src/ntfy && docker compose up -d
+
+services:
+  ntfy:
+    image: binwiederhier/ntfy:latest
+    container_name: ntfy
+    restart: unless-stopped
+    command: serve
+    environment:
+      TZ: America/Los_Angeles
+      NTFY_BASE_URL: http://lenovoflakes.tail62b305.ts.net:2586
+      NTFY_CACHE_FILE: /var/cache/ntfy/cache.db
+      NTFY_ATTACHMENT_CACHE_DIR: /var/cache/ntfy/attachments
+      # No auth-file / tokens — rely on Tailscale ACLs for exposure.
+    volumes:
+      - ./cache:/var/cache/ntfy
+    ports:
+      - "2586:80"
+    networks:
+      - homelab
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+
+networks:
+  homelab:
+    external: true

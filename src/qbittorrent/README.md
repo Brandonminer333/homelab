@@ -1,8 +1,8 @@
-# Clavicus Vile — qBittorrent + Prowlarr + FlareSolverr (Proton VPN via Gluetun)
+# qBittorrent + Prowlarr + FlareSolverr (Proton VPN via Gluetun)
 
 ## Setup
 
-qBittorrent password: `docker logs ClavicusVile 2>&1 | grep -i password`
+qBittorrent password: `docker logs qbittorrent 2>&1 | grep -i password`
 
 Port-forward (WebUI via SSH): `ssh -L 8080:localhost:8080 -L 9696:localhost:9696 lenovoflakes -N`
 
@@ -15,11 +15,11 @@ Requires a Plus-tier key with **NAT-PMP** enabled when generating the WireGuard 
 Gluetun sets `VPN_PORT_FORWARDING` + `PORT_FORWARD_ONLY` and pushes the assigned port into qBittorrent.
 In qBittorrent WebUI options, enable **Bypass authentication for clients on localhost**.
 
-Confirm: `docker logs ClavicusVile-vpn 2>&1 | grep -i "port forward"`
+Confirm: `docker logs gluetun 2>&1 | grep -i "port forward"`
 
 ## Paths
 
-Torrent files persist under `src/Clavicus Vile/data/torrents` (`/downloads` in the container).
+Torrent files persist under `src/qbittorrent/data/torrents` (`/downloads` in the container).
 In qBittorrent, keep default save path as `/downloads` (or `/downloads/completed` + incomplete `/downloads/incomplete`).
 
 ## Prowlarr links (same VPN network namespace → use localhost)

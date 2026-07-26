@@ -1,4 +1,4 @@
-# Jellyfin (Sanguine) — bind-mount stack for a headless Ubuntu homelab host.
+# Jellyfin — bind-mount stack for a headless Ubuntu homelab host.
 #
 # Fill in before first `docker compose up`:
 #   1. PUID / PGID — run `id -u` and `id -g` on the host for the user that will own ./config and ./cache
@@ -10,30 +10,21 @@
 #   ./media/music   → music library (read-only)  → /media/music
 #   ./media/videos  → video library (read-only) → /media/videos
 #
-# Access (Tailscale Serve — tailnet only, no NPM):
-#   Jellyfin is bound to 127.0.0.1:8096 on the Lenovo. On that host, after the
-#   container is up and HTTPS is enabled in the Tailscale admin console:
+# Access (nginx reverse proxy on Tailscale hostname):
+#   https://lenovoflakes.tail62b305.ts.net:8443/
 #
-#     tailscale serve --bg 8096
-#
-#   That proxies localhost:8096 to https://<your-existing-MagicDNS>/ on the
-#   tailnet (same machine name you already use for Nextcloud). Tailscale
-#   terminates TLS; auth is Tailscale identity/ACLs.
-#
-#   Coexistence with Nextcloud on the same MagicDNS host:
-#     - If Nextcloud stays on a published port (e.g. :8081), Serve on 443 for
-#       Jellyfin is fine — different ports, same hostname.
-#     - If both use Serve on 443, mount paths instead of competing for /:
-#         tailscale serve --bg --set-path=/jellyfin 8096
-#       and set JELLYFIN_PublishedServerUrl to that path URL.
+#   Jellyfin listens on the homelab Docker network only (no host publish).
+#   nginx terminates TLS and proxies :8443 → jellyfin:8096.
+#   Leave Base URL empty (root). Set JELLYFIN_PublishedServerUrl to the URL above
+#   if clients need an explicit public URL.
 #
 #   Do NOT use `tailscale funnel` unless you intentionally want public internet
-#   exposure. Serve is private to the tailnet.
+#   exposure. Tailnet access is via MagicDNS + nginx.
 
 services:
   jellyfin:
     image: jellyfin/jellyfin:10.11.11
-    container_name: Sanguine
+    container_name: jellyfin
     restart: unless-stopped
     user: "${PUID:-1000}:${PGID:-1000}"
     environment:
@@ -42,18 +33,14 @@ services:
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}
       TZ: America/Los_Angeles
-      # Set to the URL clients should use after Serve is configured, e.g.:
-      #   https://<your-MagicDNS>
-      #   https://<your-MagicDNS>/jellyfin   (if using --set-path=/jellyfin)
-      # JELLYFIN_PublishedServerUrl: https://<your-MagicDNS>
+      JELLYFIN_PublishedServerUrl: https://lenovoflakes.tail62b305.ts.net:8443
     volumes:
       - ./config:/config
       - ./cache:/cache
       - ./media/music:/media/music:ro
       - ./media/videos:/media/videos:ro
-    # Localhost only — Tailscale Serve reaches this; LAN/WAN cannot.
     networks:
-      - Oblivion
+      - homelab
     # Intel QuickSync hardware transcoding (optional):
     # Run `ls -la /dev/dri` on the host first. If renderD128 exists, uncomment the block below and restart.
     # If /dev/dri is missing or empty, leave this commented — Jellyfin will use CPU (software) transcoding.
@@ -61,5 +48,5 @@ services:
     #   - /dev/dri:/dev/dri
 
 networks:
-  Oblivion:
+  homelab:
     external: true
