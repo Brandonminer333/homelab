@@ -11,7 +11,7 @@ Hostname: `lenovoflakes.tail62b305.ts.net` (Tailscale MagicDNS).
 | 8443  | Jellyfin             | nginx → jellyfin | `https://lenovoflakes.tail62b305.ts.net:8443/` |
 | 8444  | Nextcloud            | nginx → nextcloud | `https://lenovoflakes.tail62b305.ts.net:8444/` |
 | 8445  | Pi-hole admin        | nginx → pihole | `https://lenovoflakes.tail62b305.ts.net:8445/admin/` |
-| 25565 | Minecraft            | minecraft   | `lenovoflakes.tail62b305.ts.net:25565` |
+| 25565 | Minecraft            | minecraft   | Tailscale: `lenovoflakes.tail62b305.ts.net:25565`; public: router TCP forward + whitelist in `src/minecraft/.env` |
 | 2586  | ntfy                 | ntfy        | `http://lenovoflakes.tail62b305.ts.net:2586` |
 
 ## Localhost-only (SSH tunnel)

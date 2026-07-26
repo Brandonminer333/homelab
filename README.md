@@ -32,13 +32,15 @@ Reverse proxy (Tailscale TLS). Landing at `:443`; apps on `:8443` (Jellyfin), `:
 
 ## minecraft
 
-Vanilla Minecraft server (`itzg/minecraft-server`) on port 25565.
+Vanilla Minecraft server (`itzg/minecraft-server`) on port 25565. Whitelist required (see `src/minecraft/.env.example`).
 
 ```bash
-cd minecraft && docker compose up -d
+cd src/minecraft
+cp .env.example .env   # set WHITELIST=your,friends,here
+docker compose up -d
 ```
 
-Join from the Minecraft client: `lenovoflakes.tail62b305.ts.net` (Tailscale). World data lives in `minecraft/mc-data/`.
+Join via Tailscale: `lenovoflakes.tail62b305.ts.net`. For public access, forward TCP 25565 on the router and use your public IP / DDNS. World data lives in `src/minecraft/mc-data/`.
 
 ## watchtower
 
