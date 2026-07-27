@@ -12,3 +12,4 @@
 | Torrenting | qbittorrent |
 | Git Sync | watchtower |
 | Git | gitea |
+| Password Manager | vaultwarden |

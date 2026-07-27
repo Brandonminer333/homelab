@@ -11,3 +11,6 @@ src/gitea/data/** # repos / app data — keep directory via .gitkeep
 !src/gitea/data/.gitkeep
 src/gitea/postgres/** # database — keep directory via .gitkeep
 !src/gitea/postgres/.gitkeep
+
+src/vaultwarden/data/** # vault DB / attachments — keep directory via .gitkeep
+!src/vaultwarden/data/.gitkeep

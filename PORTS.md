@@ -12,6 +12,7 @@ Hostname: `lenovoflakes.tail62b305.ts.net` (Tailscale MagicDNS).
 | 8444  | Nextcloud            | nginx → nextcloud | `https://lenovoflakes.tail62b305.ts.net:8444/` |
 | 8445  | Pi-hole admin        | nginx → pihole | `https://lenovoflakes.tail62b305.ts.net:8445/admin/` |
 | 8446  | Gitea                | nginx → gitea | `https://lenovoflakes.tail62b305.ts.net:8446/` |
+| 8447  | Vaultwarden          | nginx → vaultwarden | `https://lenovoflakes.tail62b305.ts.net:8447/` |
 | 2222  | Gitea SSH            | gitea       | `ssh://git@lenovoflakes.tail62b305.ts.net:2222/...` |
 | 25565 | Minecraft            | minecraft   | Tailscale: `lenovoflakes.tail62b305.ts.net:25565`; public: router TCP forward + whitelist in `src/minecraft/.env` |
 | 2586  | ntfy                 | ntfy        | `http://lenovoflakes.tail62b305.ts.net:2586` |
@@ -31,6 +32,7 @@ Hostname: `lenovoflakes.tail62b305.ts.net` (Tailscale MagicDNS).
 | 80   | Nextcloud (Apache) | nextcloud   | nginx proxies `:8444` → `nextcloud:80` |
 | 80   | Pi-hole admin      | pihole      | nginx proxies `:8445` → `pihole` (`/admin`) |
 | 3000 | Gitea HTTP         | gitea       | nginx proxies `:8446` → `gitea:3000` |
+| 80   | Vaultwarden        | vaultwarden | nginx proxies `:8447` → `vaultwarden:80` |
 | 8191 | FlareSolverr       | qbittorrent | Prowlarr reaches `http://127.0.0.1:8191` inside the VPN netns |
 
 ## Not published (optional)

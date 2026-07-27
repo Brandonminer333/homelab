@@ -1,0 +1,51 @@
+# Vaultwarden — Bitwarden-compatible password manager (SQLite).
+#
+# Fill in before first `docker compose up`:
+#   1. cp .env.example .env
+#   2. Set ADMIN_TOKEN (see .env.example for how to generate)
+#   3. Leave SIGNUPS_ALLOWED=true until you create your account, then set false
+#
+# Layout (host paths under src/vaultwarden/):
+#   ./data → vault DB, attachments, config (read-write)
+#
+# Access (nginx reverse proxy on Tailscale hostname):
+#   https://lenovoflakes.tail62b305.ts.net:8447/
+#
+#   Vaultwarden listens on the homelab Docker network only (no host publish).
+#   nginx terminates TLS and proxies :8447 → vaultwarden:80.
+#
+# Clients (Bitwarden official extension / apps):
+#   Settings → Self-hosted → Server URL:
+#     https://lenovoflakes.tail62b305.ts.net:8447
+#
+# Admin panel (after ADMIN_TOKEN is set):
+#   https://lenovoflakes.tail62b305.ts.net:8447/admin
+#
+# Start:
+#   cd src/vaultwarden && docker compose up -d
+
+services:
+  vaultwarden:
+    image: vaultwarden/server:1.37.0
+    container_name: vaultwarden
+    restart: unless-stopped
+    environment:
+      TZ: America/Los_Angeles
+      # Must match the public HTTPS URL (Bitwarden clients require TLS).
+      DOMAIN: https://lenovoflakes.tail62b305.ts.net:8447
+      ADMIN_TOKEN: ${ADMIN_TOKEN:?Set ADMIN_TOKEN in .env}
+      # true for first account; set false in .env after signup and recreate.
+      SIGNUPS_ALLOWED: ${SIGNUPS_ALLOWED:-true}
+      INVITATIONS_ALLOWED: ${INVITATIONS_ALLOWED:-false}
+      SHOW_PASSWORD_HINT: "false"
+      LOG_LEVEL: warn
+    volumes:
+      - ./data:/data
+    networks:
+      - homelab
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+
+networks:
+  homelab:
+    external: true
