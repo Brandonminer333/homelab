@@ -9,7 +9,7 @@ services:
       - "8443:8443" # Jellyfin
       - "8444:8444" # Nextcloud
       - "8445:8445" # Pi-hole
-      - "8446:8446" # Gitea
+      - "8446:8446" # Forgejo
       - "8447:8447" # Vaultwarden
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro

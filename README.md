@@ -11,5 +11,5 @@
 | DNS | pihole
 | Torrenting | qbittorrent |
 | Git Sync | watchtower |
-| Git | gitea |
+| Git | forgejo |
 | Password Manager | vaultwarden |
