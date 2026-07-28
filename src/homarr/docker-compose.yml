@@ -1,0 +1,40 @@
+# Homarr — self-hosted dashboard (SQLite).
+#
+# Fill in before first `docker compose up`:
+#   1. cp .env.example .env
+#   2. Set SECRET_ENCRYPTION_KEY (see .env.example for how to generate)
+#
+# Layout (host paths under src/homarr/):
+#   ./data → Homarr appdata / DB (read-write)
+#   /var/run/docker.sock → Docker status / management (read-write)
+#
+# Access (nginx reverse proxy on Tailscale hostname):
+#   https://lenovoflakes.tail62b305.ts.net:8448/
+#
+#   Homarr listens on the homelab Docker network only (no host publish).
+#   nginx terminates TLS and proxies :8448 → homarr:7575.
+#
+# First visit: create your local Homarr admin account in the setup wizard.
+#
+# Start:
+#   cd src/homarr && docker compose up -d
+
+services:
+  homarr:
+    image: ghcr.io/homarr-labs/homarr:latest
+    container_name: homarr
+    restart: unless-stopped
+    environment:
+      TZ: America/Los_Angeles
+      SECRET_ENCRYPTION_KEY: ${SECRET_ENCRYPTION_KEY:?Set SECRET_ENCRYPTION_KEY in .env}
+    volumes:
+      - ./data:/appdata
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - homelab
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+
+networks:
+  homelab:
+    external: true
