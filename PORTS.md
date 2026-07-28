@@ -7,13 +7,12 @@ Hostname: `lenovoflakes.tail62b305.ts.net` (Tailscale MagicDNS).
 | Port  | Service              | Stack       | Access |
 |-------|----------------------|-------------|--------|
 | 80    | HTTP → HTTPS         | nginx       | redirect to `:443` |
-| 443   | Landing page         | nginx       | `https://lenovoflakes.tail62b305.ts.net/` |
+| 443   | Homepage             | nginx → homepage | `https://lenovoflakes.tail62b305.ts.net/` |
 | 8443  | Jellyfin             | nginx → jellyfin | `https://lenovoflakes.tail62b305.ts.net:8443/` |
 | 8444  | Nextcloud            | nginx → nextcloud | `https://lenovoflakes.tail62b305.ts.net:8444/` |
 | 8445  | Pi-hole admin        | nginx → pihole | `https://lenovoflakes.tail62b305.ts.net:8445/admin/` |
 | 8446  | Forgejo              | nginx → forgejo | `https://lenovoflakes.tail62b305.ts.net:8446/` |
 | 8447  | Vaultwarden          | nginx → vaultwarden | `https://lenovoflakes.tail62b305.ts.net:8447/` |
-| 8448  | Homepage             | nginx → homepage | `https://lenovoflakes.tail62b305.ts.net:8448/` |
 | 2222  | Forgejo SSH          | forgejo     | `ssh://git@lenovoflakes.tail62b305.ts.net:2222/...` |
 | 25565 | Minecraft            | minecraft   | Tailscale: `lenovoflakes.tail62b305.ts.net:25565`; public: router TCP forward + whitelist in `src/minecraft/.env` |
 | 2586  | ntfy                 | ntfy        | `http://lenovoflakes.tail62b305.ts.net:2586` |
@@ -34,7 +33,7 @@ Hostname: `lenovoflakes.tail62b305.ts.net` (Tailscale MagicDNS).
 | 80   | Pi-hole admin      | pihole      | nginx proxies `:8445` → `pihole` (`/admin`) |
 | 3000 | Forgejo HTTP       | forgejo     | nginx proxies `:8446` → `forgejo:3000` |
 | 80   | Vaultwarden        | vaultwarden | nginx proxies `:8447` → `vaultwarden:80` |
-| 3000 | Homepage           | homepage    | nginx proxies `:8448` → `homepage:3000` |
+| 3000 | Homepage           | homepage    | nginx proxies `:443` → `homepage:3000` |
 | 8191 | FlareSolverr       | qbittorrent | Prowlarr reaches `http://127.0.0.1:8191` inside the VPN netns |
 
 ## Not published (optional)

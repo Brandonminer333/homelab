@@ -5,10 +5,10 @@
 #   /var/run/docker.sock → Docker status / stats (read-only)
 #
 # Access (nginx reverse proxy on Tailscale hostname):
-#   https://lenovoflakes.tail62b305.ts.net:8448/
+#   https://lenovoflakes.tail62b305.ts.net/
 #
 #   Homepage listens on the homelab Docker network only (no host publish).
-#   nginx terminates TLS and proxies :8448 → homepage:3000.
+#   nginx terminates TLS and proxies :443 → homepage:3000.
 #
 # Edit services / layout:
 #   src/homepage/config/services.yaml
@@ -25,8 +25,7 @@ services:
     restart: unless-stopped
     environment:
       TZ: America/Los_Angeles
-      # Host header clients use (with and without :8448 — nginx $host strips port).
-      HOMEPAGE_ALLOWED_HOSTS: lenovoflakes.tail62b305.ts.net:8448,lenovoflakes.tail62b305.ts.net
+      HOMEPAGE_ALLOWED_HOSTS: lenovoflakes.tail62b305.ts.net
     volumes:
       - ./config:/app/config
       - /var/run/docker.sock:/var/run/docker.sock:ro

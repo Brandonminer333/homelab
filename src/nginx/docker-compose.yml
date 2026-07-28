@@ -4,14 +4,13 @@ services:
     container_name: nginx
     restart: unless-stopped
     ports:
-      - "80:80"     # HTTP -> HTTPS redirect (landing)
-      - "443:443"   # landing page
+      - "80:80"     # HTTP -> HTTPS redirect
+      - "443:443"   # Homepage
       - "8443:8443" # Jellyfin
       - "8444:8444" # Nextcloud
       - "8445:8445" # Pi-hole
       - "8446:8446" # Forgejo
       - "8447:8447" # Vaultwarden
-      - "8448:8448" # Homepage
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./conf.d:/etc/nginx/conf.d:ro
