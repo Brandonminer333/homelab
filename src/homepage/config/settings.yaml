@@ -1,0 +1,22 @@
+---
+title: Homelab
+description: lenovoflakes dashboard
+theme: dark
+color: slate
+target: _blank
+hideVersion: true
+statusStyle: dot
+
+layout:
+  Media:
+    style: row
+    columns: 3
+  Cloud:
+    style: row
+    columns: 3
+  Network:
+    style: row
+    columns: 2
+  Local (SSH tunnel):
+    style: row
+    columns: 2

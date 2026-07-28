@@ -1,0 +1,40 @@
+# Homepage — self-hosted application dashboard.
+#
+# Layout (host paths under src/homepage/):
+#   ./config → Homepage YAML config (read-write)
+#   /var/run/docker.sock → Docker status / stats (read-only)
+#
+# Access (nginx reverse proxy on Tailscale hostname):
+#   https://lenovoflakes.tail62b305.ts.net:8448/
+#
+#   Homepage listens on the homelab Docker network only (no host publish).
+#   nginx terminates TLS and proxies :8448 → homepage:3000.
+#
+# Edit services / layout:
+#   src/homepage/config/services.yaml
+#   src/homepage/config/settings.yaml
+#   src/homepage/config/docker.yaml
+#
+# Start:
+#   cd src/homepage && docker compose up -d
+
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    environment:
+      TZ: America/Los_Angeles
+      # Host header clients use (with and without :8448 — nginx $host strips port).
+      HOMEPAGE_ALLOWED_HOSTS: lenovoflakes.tail62b305.ts.net:8448,lenovoflakes.tail62b305.ts.net
+    volumes:
+      - ./config:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - homelab
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+
+networks:
+  homelab:
+    external: true

@@ -13,3 +13,4 @@
 | Git Sync | watchtower |
 | Git | forgejo |
 | Password Manager | vaultwarden |
+| Dashboard | homepage |

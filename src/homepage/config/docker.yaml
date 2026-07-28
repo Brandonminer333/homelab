@@ -1,0 +1,4 @@
+---
+# Local Docker via socket mounted into the homepage container.
+local:
+  socket: /var/run/docker.sock

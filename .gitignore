@@ -15,5 +15,5 @@ src/forgejo/postgres/** # database — keep directory via .gitkeep
 src/vaultwarden/data/** # vault DB / attachments — keep directory via .gitkeep
 !src/vaultwarden/data/.gitkeep
 
-src/homarr/data/** # Homarr appdata / DB — keep directory via .gitkeep
-!src/homarr/data/.gitkeep
+src/homepage/config/logs/** # Homepage runtime logs — keep directory via .gitkeep
+!src/homepage/config/logs/.gitkeep

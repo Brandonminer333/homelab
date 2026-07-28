@@ -1,0 +1,72 @@
+---
+- Media:
+    - Jellyfin:
+        icon: jellyfin.png
+        href: https://lenovoflakes.tail62b305.ts.net:8443/
+        description: Media server
+        siteMonitor: http://jellyfin:8096/
+        server: local
+        container: jellyfin
+
+    - Minecraft:
+        icon: minecraft.png
+        description: lenovoflakes.tail62b305.ts.net:25565
+        server: local
+        container: minecraft-server
+
+- Cloud:
+    - Nextcloud:
+        icon: nextcloud.png
+        href: https://lenovoflakes.tail62b305.ts.net:8444/
+        description: Files & sync
+        siteMonitor: http://nextcloud/
+        server: local
+        container: nextcloud
+
+    - Forgejo:
+        icon: forgejo.png
+        href: https://lenovoflakes.tail62b305.ts.net:8446/
+        description: Git
+        siteMonitor: http://forgejo:3000/
+        server: local
+        container: forgejo
+
+    - Vaultwarden:
+        icon: vaultwarden.png
+        href: https://lenovoflakes.tail62b305.ts.net:8447/
+        description: Password manager
+        siteMonitor: http://vaultwarden/
+        server: local
+        container: vaultwarden
+
+- Network:
+    - Pi-hole:
+        icon: pi-hole.png
+        href: https://lenovoflakes.tail62b305.ts.net:8445/admin/
+        description: DNS & ad blocking
+        siteMonitor: http://pihole/admin/
+        server: local
+        container: pihole
+
+    - ntfy:
+        icon: ntfy.png
+        href: http://lenovoflakes.tail62b305.ts.net:2586/
+        description: Push notifications
+        siteMonitor: http://ntfy:80/
+        server: local
+        container: ntfy
+
+- Local (SSH tunnel):
+    - qBittorrent:
+        icon: qbittorrent.png
+        href: http://localhost:8080/
+        description: Torrents (SSH tunnel)
+        server: local
+        container: qbittorrent
+
+    - Prowlarr:
+        icon: prowlarr.png
+        href: http://localhost:9696/
+        description: Indexers (SSH tunnel)
+        server: local
+        container: prowlarr
