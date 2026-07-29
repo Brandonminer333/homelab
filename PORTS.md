@@ -9,7 +9,7 @@ Hostname: `lenovoflakes.tail62b305.ts.net` (Tailscale MagicDNS).
 | 80    | HTTP → HTTPS         | nginx       | redirect to `:443` |
 | 443   | Homepage             | nginx → homepage | `https://lenovoflakes.tail62b305.ts.net/` |
 | 8443  | Jellyfin             | nginx → jellyfin | `https://lenovoflakes.tail62b305.ts.net:8443/` |
-| 8444  | Nextcloud            | nginx → nextcloud | `https://lenovoflakes.tail62b305.ts.net:8444/` |
+| 8444  | Seafile              | nginx → seafile | `https://lenovoflakes.tail62b305.ts.net:8444/` |
 | 8445  | Pi-hole admin        | nginx → pihole | `https://lenovoflakes.tail62b305.ts.net:8445/admin/` |
 | 8446  | Forgejo              | nginx → forgejo | `https://lenovoflakes.tail62b305.ts.net:8446/` |
 | 8447  | Vaultwarden          | nginx → vaultwarden | `https://lenovoflakes.tail62b305.ts.net:8447/` |
@@ -30,13 +30,13 @@ Hostname: `lenovoflakes.tail62b305.ts.net` (Tailscale MagicDNS).
 | Port | Service            | Stack       | Notes |
 |------|--------------------|-------------|-------|
 | 8096 | Jellyfin           | jellyfin    | nginx proxies `:8443` → `jellyfin:8096` |
-| 80   | Nextcloud (Apache) | nextcloud   | nginx proxies `:8444` → `nextcloud:80` |
+| 80   | Seafile            | seafile     | nginx proxies `:8444` → `seafile:80` |
 | 80   | Pi-hole admin      | pihole      | nginx proxies `:8445` → `pihole` (`/admin`) |
 | 3000 | Forgejo HTTP       | forgejo     | nginx proxies `:8446` → `forgejo:3000` |
 | 80   | Vaultwarden        | vaultwarden | nginx proxies `:8447` → `vaultwarden:80` |
 | 80   | ONLYOFFICE         | onlyoffice  | nginx proxies `:8448` → `onlyoffice:80` |
 | 3000 | Homepage           | homepage    | nginx proxies `:443` → `homepage:3000` |
-| 3306 | MariaDB            | mariadb     | shared DB for Nextcloud / Forgejo / ONLYOFFICE; hostname `mariadb` on `homelab` only |
+| 3306 | MariaDB            | mariadb     | shared DB for Seafile / Forgejo / ONLYOFFICE; hostname `mariadb` on `homelab` only |
 | 8191 | FlareSolverr       | qbittorrent | Prowlarr reaches `http://127.0.0.1:8191` inside the VPN netns |
 
 ## Not published (optional)

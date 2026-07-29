@@ -1,4 +1,4 @@
-# ONLYOFFICE Document Server — editors for Nextcloud (and other WOPI clients).
+# ONLYOFFICE Document Server — editors for WOPI clients (e.g. Seafile).
 # Database is shared MariaDB (src/mariadb); embedded Postgres is not used.
 #
 # Prerequisites:
@@ -22,11 +22,6 @@
 #   Document Server listens on the homelab Docker network only (no host publish).
 #   nginx terminates TLS and proxies :8448 → onlyoffice:80.
 #
-# Nextcloud connector (Admin → ONLYOFFICE):
-#   Document Editing Service address:
-#     https://lenovoflakes.tail62b305.ts.net:8448/
-#   Secret key: same as JWT_SECRET in .env
-#
 # Start (after shared MariaDB):
 #   cd src/onlyoffice && docker compose up -d
 
@@ -37,7 +32,7 @@ services:
     restart: unless-stopped
     environment:
       TZ: America/Los_Angeles
-      # Persist JWT across restarts (required for Nextcloud / connectors).
+      # Persist JWT across restarts (required for connectors).
       JWT_ENABLED: "true"
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       JWT_HEADER: Authorization

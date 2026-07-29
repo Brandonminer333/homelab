@@ -26,8 +26,32 @@ create_app_db() {
 	EOSQL
 }
 
-create_app_db nextcloud "$NEXTCLOUD_DB_PASSWORD" nextcloud
+# Seafile needs three databases owned by one user.
+create_seafile_dbs() {
+  local password="$1"
+  local password_sql="${password//\'/\'\'}"
+
+  if [ -z "$password" ]; then
+    echo "error: empty password for role seafile" >&2
+    exit 1
+  fi
+
+  echo "Creating Seafile databases ccnet_db, seafile_db, seahub_db (owner seafile)"
+
+  mariadb -u root <<-EOSQL
+		CREATE DATABASE \`ccnet_db\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+		CREATE DATABASE \`seafile_db\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+		CREATE DATABASE \`seahub_db\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+		CREATE USER 'seafile'@'%' IDENTIFIED BY '${password_sql}';
+		GRANT ALL PRIVILEGES ON \`ccnet_db\`.* TO 'seafile'@'%';
+		GRANT ALL PRIVILEGES ON \`seafile_db\`.* TO 'seafile'@'%';
+		GRANT ALL PRIVILEGES ON \`seahub_db\`.* TO 'seafile'@'%';
+		FLUSH PRIVILEGES;
+	EOSQL
+}
+
+create_seafile_dbs "$SEAFILE_DB_PASSWORD"
 create_app_db forgejo "$FORGEJO_DB_PASSWORD" forgejo
 create_app_db onlyoffice "$ONLYOFFICE_DB_PASSWORD" onlyoffice
 
-echo "App databases ready: nextcloud, forgejo, onlyoffice"
+echo "App databases ready: ccnet_db/seafile_db/seahub_db, forgejo, onlyoffice"

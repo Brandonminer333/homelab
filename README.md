@@ -6,7 +6,7 @@
 | Media Server | jellyfin |
 | LLM | WIP |
 | Minecraft Server | itzg/minecraft-server |
-| File Drive | Nextcloud |
+| File Drive | Seafile |
 | Notification Server | nfty |
 | DNS | pihole
 | Torrenting | qbittorrent |
@@ -15,4 +15,4 @@
 | Password Manager | vaultwarden |
 | Document Editors | onlyoffice |
 | Dashboard | homepage |
-| Database | mariadb (shared: Nextcloud, Forgejo, ONLYOFFICE) |
+| Database | mariadb (shared: Seafile, Forgejo, ONLYOFFICE) |

@@ -2,11 +2,11 @@
 
 One MariaDB container on the `homelab` Docker network. Isolated databases/users:
 
-| Database     | User         | Used by                          |
-|--------------|--------------|----------------------------------|
-| `nextcloud`  | `nextcloud`  | [`src/nextcloud`](../nextcloud/) |
-| `forgejo`    | `forgejo`    | [`src/forgejo`](../forgejo/)     |
-| `onlyoffice` | `onlyoffice` | [`src/onlyoffice`](../onlyoffice/) |
+| Database(s)                          | User         | Used by                            |
+|--------------------------------------|--------------|------------------------------------|
+| `ccnet_db`, `seafile_db`, `seahub_db` | `seafile`    | [`src/seafile`](../seafile/)       |
+| `forgejo`                            | `forgejo`    | [`src/forgejo`](../forgejo/)       |
+| `onlyoffice`                         | `onlyoffice` | [`src/onlyoffice`](../onlyoffice/) |
 
 Hostname from other containers: `mariadb:3306` (not published on the host).
 
@@ -15,7 +15,7 @@ Hostname from other containers: `mariadb:3306` (not published on the host).
 ```bash
 cp .env.example .env
 # Set MARIADB_ROOT_PASSWORD and each *_DB_PASSWORD (e.g. openssl rand -base64 32)
-# Copy NEXTCLOUD_DB_PASSWORD / FORGEJO_DB_PASSWORD / ONLYOFFICE_DB_PASSWORD
+# Copy SEAFILE_DB_PASSWORD / FORGEJO_DB_PASSWORD / ONLYOFFICE_DB_PASSWORD
 # into the matching app .env files (values must match).
 
 cd src/mariadb && docker compose up -d
@@ -28,11 +28,11 @@ Init scripts under `./init` run **only** on first cluster init (empty datadir). 
 ## Start order
 
 1. `src/mariadb` (healthy)
-2. Nextcloud / Forgejo / ONLYOFFICE stacks
+2. Seafile / Forgejo / ONLYOFFICE stacks
 
 ## Isolation check (optional)
 
 ```bash
-docker exec -it mariadb mariadb -u nextcloud -p -e 'USE forgejo;'
-# should fail (no privileges on forgejo for user nextcloud)
+docker exec -it mariadb mariadb -u seafile -p -e 'USE forgejo;'
+# should fail (no privileges on forgejo for user seafile)
 ```

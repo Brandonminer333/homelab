@@ -16,13 +16,13 @@
         container: minecraft-server
 
 - Cloud:
-    - Nextcloud:
-        icon: nextcloud.png
+    - Seafile:
+        icon: seafile.png
         href: https://lenovoflakes.tail62b305.ts.net:8444/
         description: Files & sync
-        siteMonitor: http://nextcloud/
+        siteMonitor: http://seafile/
         server: local
-        container: nextcloud
+        container: seafile
 
     - Forgejo:
         icon: forgejo.png

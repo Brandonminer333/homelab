@@ -7,7 +7,7 @@ services:
       - "80:80"     # HTTP -> HTTPS redirect
       - "443:443"   # Homepage
       - "8443:8443" # Jellyfin
-      - "8444:8444" # Nextcloud
+      - "8444:8444" # Seafile
       - "8445:8445" # Pi-hole
       - "8446:8446" # Forgejo
       - "8447:8447" # Vaultwarden

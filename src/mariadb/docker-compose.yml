@@ -1,4 +1,4 @@
-# Shared MariaDB — one RDBMS for Nextcloud, Forgejo, and ONLYOFFICE.
+# Shared MariaDB — one RDBMS for Seafile, Forgejo, and ONLYOFFICE.
 #
 # Fill in before first `docker compose up`:
 #   1. cp .env.example .env
@@ -27,7 +27,7 @@ services:
       TZ: America/Los_Angeles
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in .env}
       # Consumed by ./init/01-create-app-dbs.sh on first boot only.
-      NEXTCLOUD_DB_PASSWORD: ${NEXTCLOUD_DB_PASSWORD:?Set NEXTCLOUD_DB_PASSWORD in .env}
+      SEAFILE_DB_PASSWORD: ${SEAFILE_DB_PASSWORD:?Set SEAFILE_DB_PASSWORD in .env}
       FORGEJO_DB_PASSWORD: ${FORGEJO_DB_PASSWORD:?Set FORGEJO_DB_PASSWORD in .env}
       ONLYOFFICE_DB_PASSWORD: ${ONLYOFFICE_DB_PASSWORD:?Set ONLYOFFICE_DB_PASSWORD in .env}
     volumes:
