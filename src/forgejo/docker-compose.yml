@@ -1,8 +1,10 @@
-# Forgejo — self-hosted Git; database is shared Postgres (src/postgres).
+# Forgejo — self-hosted Git; database is shared MariaDB (src/mariadb).
 #
 # Prerequisites:
-#   1. Shared Postgres is up and healthy (cd src/postgres && docker compose up -d)
-#   2. FORGEJO_DB_PASSWORD in this .env matches src/postgres/.env
+#   1. Shared MariaDB is up and healthy (cd src/mariadb && docker compose up -d)
+#   2. FORGEJO_DB_PASSWORD in this .env matches src/mariadb/.env
+#
+# TODO: switch FORGEJO__database__* from postgres:5432 to mariadb:3306 / mysql.
 #
 # Fill in before first `docker compose up`:
 #   1. cp .env.example .env
@@ -20,7 +22,7 @@
 # Git over SSH (direct Tailscale publish, not via nginx):
 #   ssh://git@lenovoflakes.tail62b305.ts.net:2222/<user>/<repo>.git
 #
-# Start (after shared Postgres):
+# Start (after shared MariaDB):
 #   cd src/forgejo && docker compose up -d
 
 services:

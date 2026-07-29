@@ -12,6 +12,9 @@ src/forgejo/data/** # repos / app data — keep directory via .gitkeep
 src/forgejo/postgres/** # database — keep directory via .gitkeep
 !src/forgejo/postgres/.gitkeep
 
+src/mariadb/data/** # shared MariaDB data — keep directory via .gitkeep
+!src/mariadb/data/.gitkeep
+
 src/vaultwarden/data/** # vault DB / attachments — keep directory via .gitkeep
 !src/vaultwarden/data/.gitkeep
 

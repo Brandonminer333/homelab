@@ -1,9 +1,11 @@
 # ONLYOFFICE Document Server — editors for Nextcloud (and other WOPI clients).
-# Database is shared Postgres (src/postgres); embedded Postgres is not used.
+# Database is shared MariaDB (src/mariadb); embedded Postgres is not used.
 #
 # Prerequisites:
-#   1. Shared Postgres is up and healthy (cd src/postgres && docker compose up -d)
-#   2. ONLYOFFICE_DB_PASSWORD in this .env matches src/postgres/.env
+#   1. Shared MariaDB is up and healthy (cd src/mariadb && docker compose up -d)
+#   2. ONLYOFFICE_DB_PASSWORD in this .env matches src/mariadb/.env
+#
+# TODO: switch DB_TYPE/DB_HOST from postgres to mariadb (mysql).
 #
 # Fill in before first `docker compose up`:
 #   1. cp .env.example .env
@@ -25,7 +27,7 @@
 #     https://lenovoflakes.tail62b305.ts.net:8448/
 #   Secret key: same as JWT_SECRET in .env
 #
-# Start (after shared Postgres):
+# Start (after shared MariaDB):
 #   cd src/onlyoffice && docker compose up -d
 
 services:
@@ -40,7 +42,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       JWT_HEADER: Authorization
       JWT_IN_BODY: "false"
-      # External shared Postgres (DB must already exist; see src/postgres/init).
+      # External shared MariaDB (DB must already exist; see src/mariadb/init).
+      # TODO: DB_TYPE/DB_HOST still point at Postgres until this stack is rewired.
       DB_TYPE: postgres
       DB_HOST: postgres
       DB_PORT: "5432"

@@ -1,11 +1,11 @@
-# Nextcloud — files / sync; database is shared Postgres (src/postgres).
+# Nextcloud — files / sync; database is shared MariaDB (src/mariadb).
 #
 # Prerequisites:
-#   1. Shared Postgres is up and healthy (cd src/postgres && docker compose up -d)
-#   2. NEXTCLOUD_DB_PASSWORD in this .env matches src/postgres/.env
+#   1. Shared MariaDB is up and healthy (cd src/mariadb && docker compose up -d)
+#   2. NEXTCLOUD_DB_PASSWORD in this .env matches src/mariadb/.env
 #
-# Fresh DB: wipe old MariaDB data (/opt/nextcloud/db) and reset html config so
-# env-driven first boot can create schema on Postgres. See src/postgres/README.md.
+# TODO: switch this stack from Postgres env vars to MariaDB (MYSQL_*/mariadb:3306).
+# See src/mariadb/README.md.
 #
 # Access (nginx reverse proxy on Tailscale hostname):
 #   https://lenovoflakes.tail62b305.ts.net:8444/
