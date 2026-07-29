@@ -39,6 +39,14 @@
         server: local
         container: vaultwarden
 
+    - ONLYOFFICE:
+        icon: onlyoffice.png
+        href: https://lenovoflakes.tail62b305.ts.net:8448/
+        description: Document editors
+        siteMonitor: http://onlyoffice/healthcheck
+        server: local
+        container: onlyoffice
+
 - Network:
     - Pi-hole:
         icon: pi-hole.png

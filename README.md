@@ -13,4 +13,5 @@
 | Git Sync | watchtower |
 | Git | forgejo |
 | Password Manager | vaultwarden |
+| Document Editors | onlyoffice |
 | Dashboard | homepage |

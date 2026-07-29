@@ -10,18 +10,16 @@
 #   ./lib  → Document Server lib / cache (read-write)
 #   ./db   → embedded PostgreSQL data (read-write)
 #
-# Access (intended nginx reverse proxy on Tailscale hostname):
+# Access (nginx reverse proxy on Tailscale hostname):
 #   https://lenovoflakes.tail62b305.ts.net:8448/
 #
 #   Document Server listens on the homelab Docker network only (no host publish).
-#   Wire nginx :8448 → onlyoffice:80 when exposing publicly.
+#   nginx terminates TLS and proxies :8448 → onlyoffice:80.
 #
 # Nextcloud connector (Admin → ONLYOFFICE):
 #   Document Editing Service address:
 #     https://lenovoflakes.tail62b305.ts.net:8448/
 #   Secret key: same as JWT_SECRET in .env
-#   (Internal Docker URL http://onlyoffice works only if Nextcloud can reach it
-#   and the public URL above is set for browser callbacks.)
 #
 # Start:
 #   cd src/onlyoffice && docker compose up -d

@@ -13,7 +13,7 @@ layout:
     columns: 3
   Cloud:
     style: row
-    columns: 3
+    columns: 4
   Network:
     style: row
     columns: 2
