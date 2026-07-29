@@ -36,6 +36,7 @@ Hostname: `lenovoflakes.tail62b305.ts.net` (Tailscale MagicDNS).
 | 80   | Vaultwarden        | vaultwarden | nginx proxies `:8447` → `vaultwarden:80` |
 | 80   | ONLYOFFICE         | onlyoffice  | nginx proxies `:8448` → `onlyoffice:80` |
 | 3000 | Homepage           | homepage    | nginx proxies `:443` → `homepage:3000` |
+| 5432 | PostgreSQL         | postgres    | shared DB for Nextcloud / Forgejo / ONLYOFFICE; hostname `postgres` on `homelab` only |
 | 8191 | FlareSolverr       | qbittorrent | Prowlarr reaches `http://127.0.0.1:8191` inside the VPN netns |
 
 ## Not published (optional)

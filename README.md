@@ -15,3 +15,4 @@
 | Password Manager | vaultwarden |
 | Document Editors | onlyoffice |
 | Dashboard | homepage |
+| Database | postgres (shared: Nextcloud, Forgejo, ONLYOFFICE) |

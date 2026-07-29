@@ -1,0 +1,51 @@
+# Shared PostgreSQL — one RDBMS for Nextcloud, Forgejo, and ONLYOFFICE.
+#
+# Fill in before first `docker compose up`:
+#   1. cp .env.example .env
+#   2. Set POSTGRES_PASSWORD and each *_DB_PASSWORD (openssl rand -base64 32)
+#   3. Copy the matching app passwords into each app's .env
+#
+# Layout (host paths under src/postgres/):
+#   ./data → PostgreSQL cluster data (read-write)
+#   ./init → first-boot role/database bootstrap (read-only)
+#
+# Network: listens on the homelab Docker network only (no host publish).
+#   Apps reach it as hostname `postgres` on port 5432.
+#
+# Init scripts run only when ./data is empty (first cluster init).
+# To re-run init: stop the stack, wipe ./data (except .gitkeep), start again.
+#
+# Start (before app stacks that depend on it):
+#   cd src/postgres && docker compose up -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      TZ: America/Los_Angeles
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      # Subdir so ./data/.gitkeep does not block initdb on an empty mount.
+      PGDATA: /var/lib/postgresql/data/pgdata
+      # Consumed by ./init/01-create-app-dbs.sh on first boot only.
+      NEXTCLOUD_DB_PASSWORD: ${NEXTCLOUD_DB_PASSWORD:?Set NEXTCLOUD_DB_PASSWORD in .env}
+      FORGEJO_DB_PASSWORD: ${FORGEJO_DB_PASSWORD:?Set FORGEJO_DB_PASSWORD in .env}
+      ONLYOFFICE_DB_PASSWORD: ${ONLYOFFICE_DB_PASSWORD:?Set ONLYOFFICE_DB_PASSWORD in .env}
+    volumes:
+      - ./data:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - homelab
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+
+networks:
+  homelab:
+    external: true

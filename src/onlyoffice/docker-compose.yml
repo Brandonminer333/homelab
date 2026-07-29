@@ -1,14 +1,18 @@
 # ONLYOFFICE Document Server — editors for Nextcloud (and other WOPI clients).
+# Database is shared Postgres (src/postgres); embedded Postgres is not used.
+#
+# Prerequisites:
+#   1. Shared Postgres is up and healthy (cd src/postgres && docker compose up -d)
+#   2. ONLYOFFICE_DB_PASSWORD in this .env matches src/postgres/.env
 #
 # Fill in before first `docker compose up`:
 #   1. cp .env.example .env
-#   2. Set JWT_SECRET (openssl rand -hex 32)
+#   2. Set JWT_SECRET (openssl rand -hex 32) and ONLYOFFICE_DB_PASSWORD
 #
 # Layout (host paths under src/onlyoffice/):
 #   ./data → Document Server data / certs (read-write)
 #   ./logs → Document Server logs (read-write)
 #   ./lib  → Document Server lib / cache (read-write)
-#   ./db   → embedded PostgreSQL data (read-write)
 #
 # Access (nginx reverse proxy on Tailscale hostname):
 #   https://lenovoflakes.tail62b305.ts.net:8448/
@@ -21,7 +25,7 @@
 #     https://lenovoflakes.tail62b305.ts.net:8448/
 #   Secret key: same as JWT_SECRET in .env
 #
-# Start:
+# Start (after shared Postgres):
 #   cd src/onlyoffice && docker compose up -d
 
 services:
@@ -36,11 +40,17 @@ services:
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       JWT_HEADER: Authorization
       JWT_IN_BODY: "false"
+      # External shared Postgres (DB must already exist; see src/postgres/init).
+      DB_TYPE: postgres
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: onlyoffice
+      DB_USER: onlyoffice
+      DB_PWD: ${ONLYOFFICE_DB_PASSWORD:?Set ONLYOFFICE_DB_PASSWORD in .env}
     volumes:
       - ./data:/var/www/onlyoffice/Data
       - ./logs:/var/log/onlyoffice
       - ./lib:/var/lib/onlyoffice
-      - ./db:/var/lib/postgresql
     networks:
       - homelab
     labels:
