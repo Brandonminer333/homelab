@@ -1,0 +1,53 @@
+# ONLYOFFICE Document Server — editors for Nextcloud (and other WOPI clients).
+#
+# Fill in before first `docker compose up`:
+#   1. cp .env.example .env
+#   2. Set JWT_SECRET (openssl rand -hex 32)
+#
+# Layout (host paths under src/onlyoffice/):
+#   ./data → Document Server data / certs (read-write)
+#   ./logs → Document Server logs (read-write)
+#   ./lib  → Document Server lib / cache (read-write)
+#   ./db   → embedded PostgreSQL data (read-write)
+#
+# Access (intended nginx reverse proxy on Tailscale hostname):
+#   https://lenovoflakes.tail62b305.ts.net:8448/
+#
+#   Document Server listens on the homelab Docker network only (no host publish).
+#   Wire nginx :8448 → onlyoffice:80 when exposing publicly.
+#
+# Nextcloud connector (Admin → ONLYOFFICE):
+#   Document Editing Service address:
+#     https://lenovoflakes.tail62b305.ts.net:8448/
+#   Secret key: same as JWT_SECRET in .env
+#   (Internal Docker URL http://onlyoffice works only if Nextcloud can reach it
+#   and the public URL above is set for browser callbacks.)
+#
+# Start:
+#   cd src/onlyoffice && docker compose up -d
+
+services:
+  onlyoffice:
+    image: onlyoffice/documentserver:9.4
+    container_name: onlyoffice
+    restart: unless-stopped
+    environment:
+      TZ: America/Los_Angeles
+      # Persist JWT across restarts (required for Nextcloud / connectors).
+      JWT_ENABLED: "true"
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_HEADER: Authorization
+      JWT_IN_BODY: "false"
+    volumes:
+      - ./data:/var/www/onlyoffice/Data
+      - ./logs:/var/log/onlyoffice
+      - ./lib:/var/lib/onlyoffice
+      - ./db:/var/lib/postgresql
+    networks:
+      - homelab
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+
+networks:
+  homelab:
+    external: true
