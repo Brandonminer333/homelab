@@ -8,6 +8,7 @@
         server: local
         container: jellyfin
 
+- Gaming:
     - Minecraft:
         icon: minecraft.png
         description: lenovoflakes.tail62b305.ts.net:25565
