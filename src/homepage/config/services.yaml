@@ -8,6 +8,14 @@
         server: local
         container: jellyfin
 
+    - Immich:
+        icon: immich.png
+        href: https://lenovoflakes.tail62b305.ts.net:8449/
+        description: Photos (Seafile library)
+        siteMonitor: http://immich:2283/api/server/ping
+        server: local
+        container: immich
+
 - Gaming:
     - Minecraft:
         icon: minecraft.png

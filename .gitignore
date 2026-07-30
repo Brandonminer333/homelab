@@ -18,5 +18,10 @@ src/mariadb/data/** # shared MariaDB data — keep directory via .gitkeep
 src/vaultwarden/data/** # vault DB / attachments — keep directory via .gitkeep
 !src/vaultwarden/data/.gitkeep
 
+src/immich/library/** # Immich uploads / derived assets — keep directory via .gitkeep
+!src/immich/library/.gitkeep
+src/immich/postgres/** # bundled Immich Postgres — keep directory via .gitkeep
+!src/immich/postgres/.gitkeep
+
 src/homepage/config/logs/** # Homepage runtime logs — keep directory via .gitkeep
 !src/homepage/config/logs/.gitkeep

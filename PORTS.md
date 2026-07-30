@@ -14,6 +14,7 @@ Hostname: `lenovoflakes.tail62b305.ts.net` (Tailscale MagicDNS).
 | 8446  | Forgejo              | nginx → forgejo | `https://lenovoflakes.tail62b305.ts.net:8446/` |
 | 8447  | Vaultwarden          | nginx → vaultwarden | `https://lenovoflakes.tail62b305.ts.net:8447/` |
 | 8448  | ONLYOFFICE           | nginx → onlyoffice | `https://lenovoflakes.tail62b305.ts.net:8448/` |
+| 8449  | Immich               | nginx → immich | `https://lenovoflakes.tail62b305.ts.net:8449/` |
 | 2222  | Forgejo SSH          | forgejo     | `ssh://git@lenovoflakes.tail62b305.ts.net:2222/...` |
 | 25565 | Minecraft            | minecraft   | Tailscale: `lenovoflakes.tail62b305.ts.net:25565`; public: router TCP forward + whitelist in `src/minecraft/.env` |
 | 2586  | ntfy                 | ntfy        | `http://lenovoflakes.tail62b305.ts.net:2586` |
@@ -35,6 +36,7 @@ Hostname: `lenovoflakes.tail62b305.ts.net` (Tailscale MagicDNS).
 | 3000 | Forgejo HTTP       | forgejo     | nginx proxies `:8446` → `forgejo:3000` |
 | 80   | Vaultwarden        | vaultwarden | nginx proxies `:8447` → `vaultwarden:80` |
 | 80   | ONLYOFFICE         | onlyoffice  | nginx proxies `:8448` → `onlyoffice:80` |
+| 2283 | Immich             | immich      | nginx proxies `:8449` → `immich:2283` |
 | 3000 | Homepage           | homepage    | nginx proxies `:443` → `homepage:3000` |
 | 3306 | MariaDB            | mariadb     | shared DB for Seafile / Forgejo / ONLYOFFICE; hostname `mariadb` on `homelab` only |
 | 8191 | FlareSolverr       | qbittorrent | Prowlarr reaches `http://127.0.0.1:8191` inside the VPN netns |

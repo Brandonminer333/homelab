@@ -4,6 +4,7 @@
 
 | Service | Software |
 | Media Server | jellyfin |
+| Photos | Immich (Seafile external library) |
 | LLM | WIP |
 | Minecraft Server | itzg/minecraft-server |
 | File Drive | Seafile |
