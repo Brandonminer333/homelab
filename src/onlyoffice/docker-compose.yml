@@ -11,10 +11,10 @@
 #   1. cp .env.example .env
 #   2. Set JWT_SECRET (openssl rand -hex 32) and ONLYOFFICE_DB_PASSWORD
 #
-# Layout (host paths under src/onlyoffice/):
-#   ./data → Document Server data / certs (read-write)
-#   ./logs → Document Server logs (read-write)
-#   ./lib  → Document Server lib / cache (read-write)
+# Layout:
+#   ../../data/onlyoffice/data → Document Server data / certs (read-write)
+#   ../../data/onlyoffice/logs → Document Server logs (read-write)
+#   ../../data/onlyoffice/lib  → Document Server lib / cache (read-write)
 #
 # Access (nginx reverse proxy on Tailscale hostname):
 #   https://lenovoflakes.tail62b305.ts.net:8448/
@@ -46,9 +46,9 @@ services:
       DB_USER: onlyoffice
       DB_PWD: ${ONLYOFFICE_DB_PASSWORD:?Set ONLYOFFICE_DB_PASSWORD in .env}
     volumes:
-      - ./data:/var/www/onlyoffice/Data
-      - ./logs:/var/log/onlyoffice
-      - ./lib:/var/lib/onlyoffice
+      - ../../data/onlyoffice/data:/var/www/onlyoffice/Data
+      - ../../data/onlyoffice/logs:/var/log/onlyoffice
+      - ../../data/onlyoffice/lib:/var/lib/onlyoffice
     networks:
       - homelab
     labels:

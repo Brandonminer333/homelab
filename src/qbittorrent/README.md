@@ -19,7 +19,7 @@ Confirm: `docker logs gluetun 2>&1 | grep -i "port forward"`
 
 ## Paths
 
-Torrent files persist under `src/qbittorrent/data/torrents` (`/downloads` in the container).
+Torrent files persist under `data/qbittorrent/torrents` (`/downloads` in the container).
 In qBittorrent, keep default save path as `/downloads` (or `/downloads/completed` + incomplete `/downloads/incomplete`).
 
 ## Prowlarr links (same VPN network namespace → use localhost)

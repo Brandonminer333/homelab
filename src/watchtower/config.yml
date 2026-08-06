@@ -1,0 +1,39 @@
+containers:
+  forgejo:
+    run: False
+    depends-on: [mariadb]
+  homepage:
+    run: True
+  immich:
+    run: False
+  jellyfin:
+    run: False
+  llm:
+    run: False
+  mariadb:
+    run: True
+  minecraft:
+    run: False
+  nginx:
+    run: True
+  ntfy:
+    run: True
+  onlyoffice:
+    run: True
+    depends-on: [mariadb]
+  pihole:
+    run: True
+  qbittorrent:
+    run: False
+  radicale:
+    run: False
+  seafile:
+    run: True
+    depends-on: [mariadb]
+  vaultwarden:
+    run: True
+  vscode:
+    run: False
+  watchtower:
+    run: True
+    depends-on: [ntfy]

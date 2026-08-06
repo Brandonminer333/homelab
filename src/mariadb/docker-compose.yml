@@ -5,15 +5,15 @@
 #   2. Set MARIADB_ROOT_PASSWORD and each *_DB_PASSWORD (openssl rand -base64 32)
 #   3. Copy the matching app passwords into each app's .env
 #
-# Layout (host paths under src/mariadb/):
-#   ./data → MariaDB data directory (read-write)
-#   ./init → first-boot user/database bootstrap (read-only)
+# Layout:
+#   ../../data/mariadb → MariaDB data directory (read-write)
+#   ./init             → first-boot user/database bootstrap (read-only)
 #
 # Network: listens on the homelab Docker network only (no host publish).
 #   Apps reach it as hostname `mariadb` on port 3306.
 #
-# Init scripts run only when ./data has no existing cluster (first boot).
-# To re-run init: stop the stack, wipe ./data (except .gitkeep), start again.
+# Init scripts run only when ../../data/mariadb has no existing cluster (first boot).
+# To re-run init: stop the stack, wipe ../../data/mariadb (except .gitkeep), start again.
 #
 # Start (before app stacks that depend on it):
 #   cd src/mariadb && docker compose up -d
@@ -31,7 +31,7 @@ services:
       FORGEJO_DB_PASSWORD: ${FORGEJO_DB_PASSWORD:?Set FORGEJO_DB_PASSWORD in .env}
       ONLYOFFICE_DB_PASSWORD: ${ONLYOFFICE_DB_PASSWORD:?Set ONLYOFFICE_DB_PASSWORD in .env}
     volumes:
-      - ./data:/var/lib/mysql
+      - ../../data/mariadb:/var/lib/mysql
       - ./init:/docker-entrypoint-initdb.d:ro
     networks:
       - homelab

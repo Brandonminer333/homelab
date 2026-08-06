@@ -23,7 +23,7 @@ docker exec -it mariadb mariadb -u root -p -e 'SHOW DATABASES;'
 docker exec -it mariadb mariadb -u root -p -e 'SELECT User, Host FROM mysql.user;'
 ```
 
-Init scripts under `./init` run **only** on first cluster init (empty datadir). To re-bootstrap users/DBs: stop the stack, wipe `./data` (keep `.gitkeep`), start again.
+Init scripts under `./init` run **only** on first cluster init (empty datadir). To re-bootstrap users/DBs: stop the stack, wipe `../../data/mariadb` (keep `.gitkeep`), start again.
 
 ## Start order
 

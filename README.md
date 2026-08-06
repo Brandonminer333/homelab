@@ -15,5 +15,6 @@
 | Git | forgejo |
 | Password Manager | vaultwarden |
 | Document Editors | onlyoffice |
+| Calendar / Contacts | radicale (CalDAV / CardDAV) |
 | Dashboard | homepage |
 | Database | mariadb (shared: Seafile, Forgejo, ONLYOFFICE) |

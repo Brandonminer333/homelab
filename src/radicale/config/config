@@ -1,0 +1,29 @@
+# Radicale config — see https://radicale.org/v3.html#configuration
+# Mounted read-only at /config/config (tomsquest/docker-radicale).
+
+[server]
+hosts = 0.0.0.0:5232
+max_content_length = 100000000
+
+[auth]
+type = htpasswd
+htpasswd_filename = /config/users
+htpasswd_encryption = bcrypt
+# Delay on failed auth (seconds)
+delay = 1
+
+[rights]
+type = owner_only
+
+[storage]
+filesystem_folder = /data/collections
+
+[web]
+type = internal
+
+[logging]
+level = warning
+mask_passwords = True
+
+[headers]
+Content-Security-Policy = default-src 'self'; object-src 'none'

@@ -16,7 +16,7 @@ Photo library via Immich `v3` with the **bundled** Postgres (vectorchord image) 
 cp .env.example .env
 # Set DB_PASSWORD (pwgen -s 32 1) and confirm EXTERNAL_LIBRARY_PATH
 
-mkdir -p library postgres
+mkdir -p ../../data/immich/library ../../data/immich/postgres
 cd src/immich && docker compose up -d
 ```
 
@@ -39,6 +39,6 @@ Immich indexes in place (read-only); originals stay in the Seafile sync folder. 
 
 | Host | Container | Notes |
 |------|-----------|--------|
-| `./library` | `/data` | Immich-managed uploads / derived assets |
-| `./postgres` | Postgres data | Bundled Immich DB only |
+| `../../data/immich/library` | `/data` | Immich-managed uploads / derived assets |
+| `../../data/immich/postgres` | Postgres data | Bundled Immich DB only |
 | `EXTERNAL_LIBRARY_PATH` | `/mnt/seafile-photos` (ro) | Seafile-synced Photos |

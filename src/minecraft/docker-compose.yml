@@ -7,7 +7,7 @@
 #   4. Optional: MOTD, DIFFICULTY, MODE, MAX_PLAYERS below
 #
 # Layout:
-#   ./mc-data → world saves, server.properties, logs (read-write)
+#   ../../data/minecraft → world saves, server.properties, logs (read-write)
 #
 # Access — Tailscale (private):
 #   Multiplayer → Add Server: lenovoflakes.tail62b305.ts.net
@@ -62,4 +62,4 @@ services:
       EXISTING_WHITELIST_FILE: SYNCHRONIZE
       OPS: ${OPS:-}
     volumes:
-      - ./mc-data:/data
+      - ../../data/minecraft:/data

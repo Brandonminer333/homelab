@@ -4,24 +4,13 @@ __pycache__/
 src/Sanguine/media/ # media files are not tracked, too big
 src/Clavicus Vile/data/ # torrent downloads are not tracked, too big
 
-minecraft/mc-data/** # world saves / server data — keep directory via .gitkeep
-!minecraft/mc-data/.gitkeep
+# Persistent service data under ./data — keep directory trees via .gitkeep
+data/**
+!data/**/
+!data/**/.gitkeep
 
-src/forgejo/data/** # repos / app data — keep directory via .gitkeep
-!src/forgejo/data/.gitkeep
-src/forgejo/postgres/** # database — keep directory via .gitkeep
-!src/forgejo/postgres/.gitkeep
-
-src/mariadb/data/** # shared MariaDB data — keep directory via .gitkeep
-!src/mariadb/data/.gitkeep
-
-src/vaultwarden/data/** # vault DB / attachments — keep directory via .gitkeep
-!src/vaultwarden/data/.gitkeep
-
-src/immich/library/** # Immich uploads / derived assets — keep directory via .gitkeep
-!src/immich/library/.gitkeep
-src/immich/postgres/** # bundled Immich Postgres — keep directory via .gitkeep
-!src/immich/postgres/.gitkeep
+src/radicale/config/users # htpasswd credentials (create from users.example)
 
 src/homepage/config/logs/** # Homepage runtime logs — keep directory via .gitkeep
+!src/homepage/config/logs/
 !src/homepage/config/logs/.gitkeep

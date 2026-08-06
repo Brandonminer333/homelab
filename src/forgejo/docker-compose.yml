@@ -10,8 +10,8 @@
 #   1. cp .env.example .env
 #   2. Set FORGEJO_DB_PASSWORD (and optionally Forgejo admin via first-run UI)
 #
-# Layout (host paths under src/forgejo/):
-#   ./data → Forgejo app data, repos, config (read-write)
+# Layout:
+#   ../../data/forgejo → Forgejo app data, repos, config (read-write)
 #
 # Access (nginx reverse proxy on Tailscale hostname):
 #   https://lenovoflakes.tail62b305.ts.net:8446/
@@ -49,7 +49,7 @@ services:
       # Behind nginx TLS; honor X-Forwarded-* from the proxy.
       FORGEJO__server__PROTOCOL: http
     volumes:
-      - ./data:/data
+      - ../../data/forgejo:/data
     ports:
       # Git SSH — HTTP goes through nginx on the homelab network
       - "2222:22"

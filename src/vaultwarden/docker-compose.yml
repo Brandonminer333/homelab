@@ -5,8 +5,8 @@
 #   2. Set ADMIN_TOKEN (see .env.example for how to generate)
 #   3. Leave SIGNUPS_ALLOWED=true until you create your account, then set false
 #
-# Layout (host paths under src/vaultwarden/):
-#   ./data → vault DB, attachments, config (read-write)
+# Layout:
+#   ../../data/vaultwarden → vault DB, attachments, config (read-write)
 #
 # Access (nginx reverse proxy on Tailscale hostname):
 #   https://lenovoflakes.tail62b305.ts.net:8447/
@@ -40,7 +40,7 @@ services:
       SHOW_PASSWORD_HINT: "false"
       LOG_LEVEL: warn
     volumes:
-      - ./data:/data
+      - ../../data/vaultwarden:/data
     networks:
       - homelab
     labels:

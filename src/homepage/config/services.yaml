@@ -56,6 +56,14 @@
         server: local
         container: onlyoffice
 
+    - Radicale:
+        icon: radicale.png
+        href: https://lenovoflakes.tail62b305.ts.net:8450/
+        description: CalDAV / CardDAV
+        siteMonitor: http://radicale:5232/
+        server: local
+        container: radicale
+
 - Network:
     - Pi-hole:
         icon: pi-hole.png
