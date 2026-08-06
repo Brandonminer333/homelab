@@ -18,3 +18,4 @@
 | Calendar / Contacts | radicale (CalDAV / CardDAV) |
 | Dashboard | homepage |
 | Database | mariadb (shared: Seafile, Forgejo, ONLYOFFICE) |
+
