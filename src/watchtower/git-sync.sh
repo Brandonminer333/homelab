@@ -1,13 +1,17 @@
 #!/bin/sh
 # Poll origin for new commits; on change, git pull and sync compose stacks to
-# config/config.yml (start / stop / restart). Never tear down this watchtower
-# stack mid-deploy.
+# src/watchtower/config.yml (start / stop / restart). Never tear down this
+# watchtower stack mid-deploy.
+#
+# This script is executed from the bind-mounted repo so git pulls pick up
+# logic changes without rebuilding the image.
 set -eu
 
 REPO_DIR="${REPO_DIR:-/homelab}"
 BRANCH="${GIT_BRANCH:-main}"
 INTERVAL="${POLL_INTERVAL:-300}"
-CONFIG_FILE="${CONFIG_FILE:-${REPO_DIR}/config/config.yml}"
+# Desired stack state is always the public YAML in-repo (not .env).
+CONFIG_FILE="${REPO_DIR}/src/watchtower/config.yml"
 NTFY_URL="${NTFY_URL:-http://ntfy/homelab}"
 
 log() {
@@ -100,13 +104,16 @@ compose_restart() {
   docker compose -f "$file" --project-directory "${REPO_DIR}/${dir}" up -d --force-recreate
 }
 
-run_enabled() {
+all_stack_names() {
+  yq -r '.containers | keys | .[]' "$CONFIG_FILE"
+}
+
+# Normalize run to lowercase string. mikefarah/yq treats YAML `True` as !!bool
+# but `True == true` is false — never use bare `== true` against this config.
+run_is_true() {
   name="$1"
-  val="$(yq -r ".containers[\"${name}\"].run" "$CONFIG_FILE")"
-  case "$val" in
-    true|True|TRUE|yes|Yes|YES|1) return 0 ;;
-    *) return 1 ;;
-  esac
+  val="$(yq -r ".containers[\"${name}\"].run | tostring | downcase" "$CONFIG_FILE" 2>/dev/null || echo false)"
+  [ "$val" = "true" ]
 }
 
 # Space-separated dependency names for a stack (may be empty).
@@ -115,11 +122,29 @@ stack_deps() {
   yq -r ".containers[\"${name}\"].\"depends-on\" // [] | .[]" "$CONFIG_FILE" 2>/dev/null | tr '\n' ' '
 }
 
-all_stack_names() {
-  yq -r '.containers | keys | .[]' "$CONFIG_FILE"
+# Names with run true (one per line), excluding watchtower.
+enabled_stack_names() {
+  yq -r '
+    .containers
+    | to_entries[]
+    | select(.key != "watchtower")
+    | select((.value.run | tostring | downcase) == "true")
+    | .key
+  ' "$CONFIG_FILE"
 }
 
-# Sort for tear-down: nginx first, then everything else (deps after dependents).
+# Names with run not true (one per line), excluding watchtower.
+disabled_stack_names() {
+  yq -r '
+    .containers
+    | to_entries[]
+    | select(.key != "watchtower")
+    | select((.value.run | tostring | downcase) != "true")
+    | .key
+  ' "$CONFIG_FILE"
+}
+
+# Sort for tear-down: nginx first, then everything else.
 order_down() {
   nginx=""
   rest=""
@@ -137,7 +162,6 @@ order_down() {
 order_up() {
   remaining="$1"
   started=""
-  # nginx deferred to the end
   has_nginx=0
   trimmed=""
   for s in $remaining; do
@@ -149,7 +173,6 @@ order_up() {
   done
   remaining="$(echo "$trimmed" | xargs)"
 
-  # Safety: at most N passes for N stacks
   n=0
   for _ in $remaining; do n=$((n + 1)); done
   n=$((n + 2))
@@ -161,9 +184,8 @@ order_up() {
     for s in $remaining; do
       ready=1
       for dep in $(stack_deps "$s"); do
-        # Dependency must be enabled and already ordered, or we cannot start.
-        if ! run_enabled "$dep"; then
-          log "ERROR: $s depends on $dep but $dep.run is false"
+        if ! run_is_true "$dep"; then
+          log "ERROR: $s depends on $dep but $dep.run is not true"
           return 1
         fi
         case " $started " in
@@ -208,27 +230,25 @@ sync_from_config() {
 
   to_stop=""
   to_start=""
-  for name in $(all_stack_names); do
-    # Never manage ourselves from inside the watchtower stack.
-    if [ "$name" = "watchtower" ]; then
-      log "skip  watchtower (self)"
-      continue
-    fi
 
+  # Fail closed: only stacks with run == true are started; everything else stops.
+  for name in $(disabled_stack_names); do
     dir="$(stack_dir "$name")"
-    if ! compose_file "$dir" >/dev/null; then
-      if run_enabled "$name"; then
-        log "WARN: $name.run is true but no compose file in $dir — skipping"
-      fi
-      continue
-    fi
-
-    if run_enabled "$name"; then
-      to_start="$to_start $name"
-    else
+    if compose_file "$dir" >/dev/null 2>&1; then
       to_stop="$to_stop $name"
     fi
   done
+
+  for name in $(enabled_stack_names); do
+    dir="$(stack_dir "$name")"
+    if compose_file "$dir" >/dev/null 2>&1; then
+      to_start="$to_start $name"
+    else
+      log "WARN: $name.run is true but no compose file in $dir — skipping"
+    fi
+  done
+
+  log "plan stop:$(fmt_list "$to_stop") start:$(fmt_list "$to_start")"
 
   ordered=""
   if ! ordered="$(order_up "$to_start")"; then
@@ -321,7 +341,13 @@ while true; do
   if [ "$LOCAL" != "$REMOTE" ]; then
     log "Update detected: ${LOCAL} -> ${REMOTE}"
     if git merge --ff-only "origin/${BRANCH}"; then
-      sync_from_config || log "WARN: sync_from_config returned non-zero"
+      # Re-exec after pull so script logic updates apply without image rebuild.
+      if [ -f "${REPO_DIR}/src/watchtower/git-sync.sh" ]; then
+        sync_from_config || log "WARN: sync_from_config returned non-zero"
+      else
+        log "ERROR: ${REPO_DIR}/src/watchtower/git-sync.sh missing after pull"
+        notify "Homelab deploy failed" "git-sync.sh missing after pull" high
+      fi
     else
       log "ERROR: fast-forward merge failed (local divergence?). Skipping sync."
       notify "Homelab git-sync failed" "fast-forward merge failed on ${BRANCH}; sync skipped" high

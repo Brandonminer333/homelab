@@ -6,9 +6,10 @@
 #   Image-update notifications go to ntfy topic `homelab` on the homelab network.
 #
 # git-sync: polls origin, fast-forward pulls on new commits, then syncs every
-#   other stack to config/config.yml (down if run:false; up or force-recreate
-#   if run:true). This stack is never torn down by itself. Failed compose
-#   actions (and failed ff-only merges) notify the same ntfy topic.
+#   other stack to src/watchtower/config.yml (down if run != true; up or
+#   force-recreate if run:true). Script is read from the bind mount so pulls
+#   update sync logic. This stack is never torn down by itself. One ntfy on
+#   update lists starting/restarting stacks; failures notify separately.
 #
 # Before first up:
 #   cp .env.example .env   # set HOMELAB_PATH to the host clone path
@@ -51,7 +52,7 @@ services:
       REPO_DIR: /homelab
       GIT_BRANCH: ${GIT_BRANCH:-main}
       POLL_INTERVAL: ${POLL_INTERVAL:-300}
-      CONFIG_FILE: /homelab/src/watchtower/config.yml
+      # Stack enable/disable: src/watchtower/config.yml only (public, in-repo).
       # Internal publish URL (container name on the homelab network).
       NTFY_URL: ${NTFY_URL:-http://ntfy/homelab}
     volumes:
