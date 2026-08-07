@@ -55,5 +55,3 @@ containers:
     priority: 2
     runs: true
     depends-on: [ntfy]
-
-

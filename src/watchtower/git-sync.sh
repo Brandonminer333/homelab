@@ -3,6 +3,13 @@
 # src/watchtower/config.yml (start / stop / restart). Never tear down this
 # watchtower stack mid-deploy.
 #
+# Sync phases:
+#   1. Stop every stack with runs:false (lowest priority first)
+#   2. Start / restart stacks with runs:true (highest priority first;
+#      depends-on still enforced)
+#
+# On compose failure for one stack: ntfy that stack, then continue others.
+#
 # This script is executed from the bind-mounted repo so git pulls pick up
 # logic changes without rebuilding the image.
 set -eu
@@ -104,15 +111,32 @@ compose_restart() {
   docker compose -f "$file" --project-directory "${REPO_DIR}/${dir}" up -d --force-recreate
 }
 
-all_stack_names() {
-  yq -r '.containers | keys | .[]' "$CONFIG_FILE"
+# Notify about a single stack failure, then caller continues.
+notify_stack_failed() {
+  action="$1"
+  name="$2"
+  log "ERROR: ${action} failed for ${name} — continuing"
+  notify \
+    "Homelab ${action} failed" \
+    "${name} failed during ${action}; continuing with remaining stacks" \
+    high \
+    warning
 }
 
-# Normalize run to lowercase string. mikefarah/yq treats YAML `True` as !!bool
-# but `True == true` is false — never use bare `== true` against this config.
-run_is_true() {
+# Integer priority from config (default 0). Higher = earlier on up.
+stack_priority() {
   name="$1"
-  val="$(yq -r ".containers[\"${name}\"].run | tostring | downcase" "$CONFIG_FILE" 2>/dev/null || echo false)"
+  pri="$(yq -r ".containers[\"${name}\"].priority // 0" "$CONFIG_FILE" 2>/dev/null || echo 0)"
+  case "$pri" in
+    ''|null) echo 0 ;;
+    *) echo "$pri" ;;
+  esac
+}
+
+# Normalize runs to lowercase string (config key is `runs`).
+runs_is_true() {
+  name="$1"
+  val="$(yq -r ".containers[\"${name}\"].runs | tostring | downcase" "$CONFIG_FILE" 2>/dev/null || echo false)"
   [ "$val" = "true" ]
 }
 
@@ -122,70 +146,62 @@ stack_deps() {
   yq -r ".containers[\"${name}\"].\"depends-on\" // [] | .[]" "$CONFIG_FILE" 2>/dev/null | tr '\n' ' '
 }
 
-# Names with run true (one per line), excluding watchtower.
+# Names with runs true (one per line), excluding watchtower.
 enabled_stack_names() {
   yq -r '
     .containers
     | to_entries[]
     | select(.key != "watchtower")
-    | select((.value.run | tostring | downcase) == "true")
+    | select((.value.runs | tostring | downcase) == "true")
     | .key
   ' "$CONFIG_FILE"
 }
 
-# Names with run not true (one per line), excluding watchtower.
+# Names with runs not true (one per line), excluding watchtower.
 disabled_stack_names() {
   yq -r '
     .containers
     | to_entries[]
     | select(.key != "watchtower")
-    | select((.value.run | tostring | downcase) != "true")
+    | select((.value.runs | tostring | downcase) != "true")
     | .key
   ' "$CONFIG_FILE"
 }
 
-# Sort for tear-down: nginx first, then everything else.
+# Tear-down order: lowest priority first. Prints names one per line.
 order_down() {
-  nginx=""
-  rest=""
-  for s in $1; do
-    case "$s" in
-      nginx) nginx="$nginx $s" ;;
-      *) rest="$rest $s" ;;
-    esac
+  remaining="$1"
+  [ -z "$(echo "$remaining" | xargs)" ] && return 0
+
+  lines=""
+  for s in $remaining; do
+    lines="${lines}$(stack_priority "$s") ${s}
+"
   done
-  echo "$nginx $rest" | xargs
+  echo "$lines" | sed '/^$/d' | sort -n -k1,1 -k2,2 | awk '{print $2}'
 }
 
-# Topological order for start: respect depends-on; nginx always last.
-# Prints names one per line; exits 1 if a cycle or missing enabled dep is found.
+# Start order: among stacks whose depends-on are satisfied, pick highest
+# priority next (then name). Prints names one per line.
 order_up() {
   remaining="$1"
   started=""
-  has_nginx=0
-  trimmed=""
-  for s in $remaining; do
-    if [ "$s" = "nginx" ]; then
-      has_nginx=1
-    else
-      trimmed="$trimmed $s"
-    fi
-  done
-  remaining="$(echo "$trimmed" | xargs)"
 
   n=0
   for _ in $remaining; do n=$((n + 1)); done
   n=$((n + 2))
 
-  while [ -n "$remaining" ] && [ "$n" -gt 0 ]; do
+  while [ -n "$(echo "$remaining" | xargs)" ] && [ "$n" -gt 0 ]; do
     n=$((n - 1))
-    progress=0
+    best=""
+    best_pri=-999999
     next_remaining=""
+
     for s in $remaining; do
       ready=1
       for dep in $(stack_deps "$s"); do
-        if ! run_is_true "$dep"; then
-          log "ERROR: $s depends on $dep but $dep.run is not true"
+        if ! runs_is_true "$dep"; then
+          log "ERROR: $s depends on $dep but $dep.runs is not true"
           return 1
         fi
         case " $started " in
@@ -193,24 +209,41 @@ order_up() {
           *) ready=0; break ;;
         esac
       done
-      if [ "$ready" -eq 1 ]; then
-        echo "$s"
-        started="$started $s"
-        progress=1
-      else
+
+      if [ "$ready" -eq 0 ]; then
         next_remaining="$next_remaining $s"
+        continue
       fi
+
+      pri="$(stack_priority "$s")"
+      if [ -z "$best" ]; then
+        best="$s"
+        best_pri="$pri"
+      elif [ "$pri" -gt "$best_pri" ]; then
+        best="$s"
+        best_pri="$pri"
+      elif [ "$pri" -eq "$best_pri" ] && [ "$s" \< "$best" ]; then
+        best="$s"
+      fi
+      next_remaining="$next_remaining $s"
     done
-    remaining="$(echo "$next_remaining" | xargs)"
-    if [ "$progress" -eq 0 ] && [ -n "$remaining" ]; then
+
+    if [ -z "$best" ]; then
       log "ERROR: dependency cycle or unsatisfied depends-on among:$remaining"
       return 1
     fi
-  done
 
-  if [ "$has_nginx" -eq 1 ]; then
-    echo "nginx"
-  fi
+    echo "$best"
+    started="$started $best"
+
+    remaining=""
+    for s in $next_remaining; do
+      if [ "$s" != "$best" ]; then
+        remaining="$remaining $s"
+      fi
+    done
+    remaining="$(echo "$remaining" | xargs)"
+  done
 }
 
 sync_from_config() {
@@ -231,7 +264,7 @@ sync_from_config() {
   to_stop=""
   to_start=""
 
-  # Fail closed: only stacks with run == true are started; everything else stops.
+  # Fail closed: only stacks with runs == true are started; everything else stops.
   for name in $(disabled_stack_names); do
     dir="$(stack_dir "$name")"
     if compose_file "$dir" >/dev/null 2>&1; then
@@ -244,11 +277,9 @@ sync_from_config() {
     if compose_file "$dir" >/dev/null 2>&1; then
       to_start="$to_start $name"
     else
-      log "WARN: $name.run is true but no compose file in $dir — skipping"
+      log "WARN: $name.runs is true but no compose file in $dir — skipping"
     fi
   done
-
-  log "plan stop:$(fmt_list "$to_stop") start:$(fmt_list "$to_start")"
 
   ordered=""
   if ! ordered="$(order_up "$to_start")"; then
@@ -256,7 +287,7 @@ sync_from_config() {
     return 1
   fi
 
-  # Classify enabled stacks before acting (for the single lag advisory notify).
+  # Classify enabled stacks before acting (for the lag advisory notify).
   starting=""
   restarting=""
   for name in $ordered; do
@@ -268,48 +299,57 @@ sync_from_config() {
     fi
   done
 
-  # One notification per detected update: where downtime / lag will be.
+  log "plan stop:$(fmt_list "$to_stop")"
+  log "plan start:$(fmt_list "$starting") restart:$(fmt_list "$restarting")"
+  log "order up:$(fmt_list "$ordered")"
+
+  # One advisory notification: where downtime / lag will be.
   notify \
     "Homelab update detected" \
-    "starting: $(fmt_list "$starting")
+    "stopping: $(fmt_list "$to_stop")
+starting: $(fmt_list "$starting")
 restarting: $(fmt_list "$restarting")" \
     default \
     whale
 
-  failed=""
+  had_failure=0
 
+  # Phase 1: stop every runs:false stack before touching enabled ones.
+  log "Phase 1: stopping disabled stacks"
   for name in $(order_down "$to_stop"); do
     dir="$(stack_dir "$name")"
     if stack_running "$dir" 2>/dev/null; then
-      compose_down "$dir" || {
-        log "WARN: down failed for $name"
-        failed="${failed} down:${name}"
-      }
+      if ! compose_down "$dir"; then
+        notify_stack_failed "stop" "$name"
+        had_failure=1
+      fi
     else
       log "skip  $name (already stopped)"
     fi
   done
 
+  # Phase 2: start / restart runs:true stacks in priority order.
+  log "Phase 2: starting/restarting enabled stacks"
   for name in $ordered; do
     dir="$(stack_dir "$name")"
     case " ${restarting} " in
       *" ${name} "*)
         if ! compose_restart "$dir"; then
-          log "ERROR: restart failed for $name"
-          failed="${failed} restart:${name}"
+          notify_stack_failed "restart" "$name"
+          had_failure=1
         fi
         ;;
       *)
         if ! compose_up "$dir"; then
-          log "ERROR: up failed for $name"
-          failed="${failed} up:${name}"
+          notify_stack_failed "start" "$name"
+          had_failure=1
         fi
         ;;
     esac
   done
 
-  if [ -n "$failed" ]; then
-    notify "Homelab deploy failed" "compose failed for:${failed}" high
+  if [ "$had_failure" -ne 0 ]; then
+    log "Sync finished with failures"
     return 1
   fi
 
@@ -341,7 +381,6 @@ while true; do
   if [ "$LOCAL" != "$REMOTE" ]; then
     log "Update detected: ${LOCAL} -> ${REMOTE}"
     if git merge --ff-only "origin/${BRANCH}"; then
-      # Re-exec after pull so script logic updates apply without image rebuild.
       if [ -f "${REPO_DIR}/src/watchtower/git-sync.sh" ]; then
         sync_from_config || log "WARN: sync_from_config returned non-zero"
       else
