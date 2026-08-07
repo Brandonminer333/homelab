@@ -1,40 +1,57 @@
 containers:
   forgejo:
-    run: false
+    priority: 1
+    runs: false
     depends-on: [mariadb]
   homepage:
-    run: true
+    priority: 1
+    runs: true
   immich:
-    run: false
+    priority: 1
+    runs: false
   jellyfin:
-    run: false
+    priority: 1
+    runs: false
   llm:
-    run: false
+    priority: 1
+    runs: false
     path: src/llm/mcp/public
   mariadb:
-    run: true
+    priority: 1
+    runs: true
   minecraft:
-    run: false
+    priority: 1
+    runs: false
   nginx:
-    run: true
+    priority: 0
+    runs: true
   ntfy:
-    run: true
+    priority: 2
+    runs: true
   onlyoffice:
-    run: false
+    priority: 1
+    runs: false
     depends-on: [mariadb]
   pihole:
-    run: true
+    priority: 1
+    runs: true
   qbittorrent:
-    run: false
+    priority: 1
+    runs: false
   radicale:
-    run: false
+    priority: 1
+    runs: false
   seafile:
-    run: true
+    priority: 1
+    runs: true
     depends-on: [mariadb]
   vaultwarden:
-    run: true
+    priority: 1
+    runs: true
   vscode:
-    run: false
+    priority: 1
+    runs: false
   watchtower:
-    run: true
+    priority: 2
+    runs: true
     depends-on: [ntfy]

@@ -6,10 +6,12 @@
 #   Image-update notifications go to ntfy topic `homelab` on the homelab network.
 #
 # git-sync: polls origin, fast-forward pulls on new commits, then syncs every
-#   other stack to src/watchtower/config.yml (down if run != true; up or
-#   force-recreate if run:true). Script is read from the bind mount so pulls
-#   update sync logic. This stack is never torn down by itself. One ntfy on
-#   update lists starting/restarting stacks; failures notify separately.
+#   other stack to src/watchtower/config.yml (down if runs != true; up or
+#   force-recreate if runs:true). Order: higher priority first on up (0 =
+#   lowest), reverse on down; depends-on still enforced. Script is read from
+#   the bind mount so pulls update sync logic. This stack is never torn down
+#   by itself. One ntfy on update lists starting/restarting stacks; failures
+#   notify separately.
 #
 # Before first up:
 #   cp .env.example .env   # set HOMELAB_PATH to the host clone path
