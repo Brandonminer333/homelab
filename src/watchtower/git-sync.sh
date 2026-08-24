@@ -139,11 +139,13 @@ stack_container_ids() {
   compose_invoke "$dir" ps -q 2>/dev/null | sort | tr '\n' ' '
 }
 
-# True when .env.example exists but .env is missing in the stack directory.
+# True when the compose file requires .env secrets but .env is missing.
 stack_env_missing() {
   dir="$1"
   stack_root="${REPO_DIR}/${dir}"
-  [ -f "${stack_root}/.env.example" ] && [ ! -f "${stack_root}/.env" ]
+  local_file="$(compose_file "$dir")" || return 1
+  [ -f "${stack_root}/.env" ] && return 1
+  grep -qE '\$\{[A-Za-z_][A-Za-z0-9_]*:\?' "$local_file" 2>/dev/null
 }
 
 # Apply compose up -d. On success prints one of: started, recreated, unchanged.
@@ -155,7 +157,7 @@ compose_up() {
   }
 
   if stack_env_missing "$dir"; then
-    log "ERROR: ${dir} has .env.example but no .env on host — cp .env.example .env and set secrets, then re-run sync"
+    log "ERROR: ${dir} compose requires .env secrets but .env is missing — cp .env.example .env, set values, then re-run sync"
     return 1
   fi
 
