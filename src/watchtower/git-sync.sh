@@ -83,29 +83,40 @@ compose_file() {
   echo "${REPO_DIR}/${dir}/${rel}"
 }
 
-compose_host_file() {
-  dir="$1"
-  rel="$(compose_file_rel "$dir")" || return 1
-  echo "${HOST_REPO_DIR}/${dir}/${rel}"
-}
-
 compose_project_dir() {
   echo "${HOST_REPO_DIR}/$1"
+}
+
+# -f must use REPO_DIR (readable in-container); --project-directory uses HOST_REPO_DIR
+# so compose matches containers labeled with the host clone path.
+compose_invoke() {
+  dir="$1"
+  shift
+  local_file="$(compose_file "$dir")" || return 1
+  docker compose -f "$local_file" --project-directory "$(compose_project_dir "$dir")" "$@"
 }
 
 # True if any container in the compose project is running.
 stack_running() {
   dir="$1"
   compose_file_rel "$dir" >/dev/null || return 1
-  file="$(compose_host_file "$dir")"
-  proj="$(compose_project_dir "$dir")"
-  ids="$(docker compose -f "$file" --project-directory "$proj" ps -q --status running 2>/dev/null || true)"
+
+  ids="$(compose_invoke "$dir" ps -q --status running 2>/dev/null || true)"
   if [ -n "$ids" ]; then
     return 0
   fi
+
+  project="$(basename "$dir")"
+  ids="$(docker ps -q \
+    --filter "label=com.docker.compose.project=${project}" \
+    --filter "status=running" 2>/dev/null || true)"
+  if [ -n "$ids" ]; then
+    return 0
+  fi
+
   local_file="$(compose_file "$dir")"
   for cname in $(yq -r '.services[].container_name // empty' "$local_file" 2>/dev/null); do
-    if [ -n "$cname" ] && docker ps -q --filter "name=^${cname}$" --filter "status=running" 2>/dev/null | grep -q .; then
+    if [ -n "$cname" ] && docker inspect -f '{{.State.Running}}' "$cname" 2>/dev/null | grep -qx true; then
       return 0
     fi
   done
@@ -114,30 +125,27 @@ stack_running() {
 
 compose_down() {
   dir="$1"
-  file="$(compose_host_file "$dir")" || {
+  compose_file_rel "$dir" >/dev/null || {
     log "WARN: no compose file in $dir"
     return 1
   }
   log "down  $dir"
-  docker compose -f "$file" --project-directory "$(compose_project_dir "$dir")" down
+  compose_invoke "$dir" down
 }
 
 # Sorted container IDs for a stack (one line, space-separated).
 stack_container_ids() {
   dir="$1"
-  file="$(compose_host_file "$dir")" || return 1
-  docker compose -f "$file" --project-directory "$(compose_project_dir "$dir")" ps -q 2>/dev/null \
-    | sort | tr '\n' ' '
+  compose_invoke "$dir" ps -q 2>/dev/null | sort | tr '\n' ' '
 }
 
 # Apply compose up -d. On success prints one of: started, recreated, unchanged.
 compose_up() {
   dir="$1"
-  file="$(compose_host_file "$dir")" || {
+  compose_file_rel "$dir" >/dev/null || {
     log "WARN: no compose file in $dir"
     return 1
   }
-  proj="$(compose_project_dir "$dir")"
 
   was_running=0
   before_ids=""
@@ -147,7 +155,7 @@ compose_up() {
   fi
 
   log "up    $dir"
-  if ! docker compose -f "$file" --project-directory "$proj" up -d 1>&2; then
+  if ! compose_invoke "$dir" up -d 1>&2; then
     return 1
   fi
 
