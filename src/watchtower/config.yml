@@ -39,7 +39,7 @@ containers:
     runs: false
   radicale:
     priority: 1
-    runs: false
+    runs: true
   seafile:
     priority: 1
     runs: true
