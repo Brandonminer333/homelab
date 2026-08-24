@@ -1,12 +1,12 @@
 #!/bin/sh
 # Poll origin for new commits; on change, git pull and sync compose stacks to
-# src/watchtower/config.yml (start / stop / restart). Never tear down this
-# watchtower stack mid-deploy.
+# src/watchtower/config.yml (start / stop / apply compose changes). Never tear
+# down this watchtower stack mid-deploy.
 #
 # Sync phases:
 #   1. Stop every stack with runs:false (lowest priority first)
-#   2. Start / restart stacks with runs:true (highest priority first;
-#      depends-on still enforced)
+#   2. Apply compose up -d for runs:true stacks (highest priority first;
+#      depends-on still enforced). Compose recreates only when the spec changed.
 #
 # On compose failure for one stack: ntfy that stack, then continue others.
 #
@@ -90,25 +90,45 @@ compose_down() {
   docker compose -f "$file" --project-directory "${REPO_DIR}/${dir}" down
 }
 
+# Sorted container IDs for a stack (one line, space-separated).
+stack_container_ids() {
+  dir="$1"
+  file="$(compose_file "$dir")" || return 1
+  docker compose -f "$file" --project-directory "${REPO_DIR}/${dir}" ps -q 2>/dev/null \
+    | sort | tr '\n' ' '
+}
+
+# Apply compose up -d. On success prints one of: started, recreated, unchanged.
 compose_up() {
   dir="$1"
   file="$(compose_file "$dir")" || {
     log "WARN: no compose file in $dir"
     return 1
   }
-  log "up    $dir"
-  docker compose -f "$file" --project-directory "${REPO_DIR}/${dir}" up -d
-}
 
-# Recreate running stack so bind-mounted compose/config changes take effect.
-compose_restart() {
-  dir="$1"
-  file="$(compose_file "$dir")" || {
-    log "WARN: no compose file in $dir"
+  was_running=0
+  before_ids=""
+  if stack_running "$dir"; then
+    was_running=1
+    before_ids="$(stack_container_ids "$dir" || true)"
+  fi
+
+  log "up    $dir"
+  if ! docker compose -f "$file" --project-directory "${REPO_DIR}/${dir}" up -d 1>&2; then
     return 1
-  }
-  log "restart $dir"
-  docker compose -f "$file" --project-directory "${REPO_DIR}/${dir}" up -d --force-recreate
+  fi
+
+  if [ "$was_running" -eq 0 ]; then
+    echo started
+    return 0
+  fi
+
+  after_ids="$(stack_container_ids "$dir" || true)"
+  if [ "$before_ids" != "$after_ids" ]; then
+    echo recreated
+  else
+    echo unchanged
+  fi
 }
 
 # Notify about a single stack failure, then caller continues.
@@ -287,39 +307,22 @@ sync_from_config() {
     return 1
   fi
 
-  # Classify enabled stacks before acting (for the lag advisory notify).
-  starting=""
-  restarting=""
-  for name in $ordered; do
-    dir="$(stack_dir "$name")"
-    if stack_running "$dir" 2>/dev/null; then
-      restarting="${restarting} ${name}"
-    else
-      starting="${starting} ${name}"
-    fi
-  done
-
   log "plan stop:$(fmt_list "$to_stop")"
-  log "plan start:$(fmt_list "$starting") restart:$(fmt_list "$restarting")"
   log "order up:$(fmt_list "$ordered")"
 
-  # One advisory notification: where downtime / lag will be.
-  notify \
-    "Homelab update detected" \
-    "stopping: $(fmt_list "$to_stop")
-starting: $(fmt_list "$starting")
-restarting: $(fmt_list "$restarting")" \
-    default \
-    whale
-
   had_failure=0
+  stopped=""
+  started=""
+  recreated=""
 
   # Phase 1: stop every runs:false stack before touching enabled ones.
   log "Phase 1: stopping disabled stacks"
   for name in $(order_down "$to_stop"); do
     dir="$(stack_dir "$name")"
     if stack_running "$dir" 2>/dev/null; then
-      if ! compose_down "$dir"; then
+      if compose_down "$dir"; then
+        stopped="${stopped} ${name}"
+      else
         notify_stack_failed "stop" "$name"
         had_failure=1
       fi
@@ -328,25 +331,42 @@ restarting: $(fmt_list "$restarting")" \
     fi
   done
 
-  # Phase 2: start / restart runs:true stacks in priority order.
-  log "Phase 2: starting/restarting enabled stacks"
+  # Phase 2: apply compose up -d for runs:true stacks in priority order.
+  log "Phase 2: applying enabled stacks"
   for name in $ordered; do
     dir="$(stack_dir "$name")"
-    case " ${restarting} " in
-      *" ${name} "*)
-        if ! compose_restart "$dir"; then
-          notify_stack_failed "restart" "$name"
-          had_failure=1
-        fi
-        ;;
-      *)
-        if ! compose_up "$dir"; then
-          notify_stack_failed "start" "$name"
-          had_failure=1
-        fi
-        ;;
+    result="$(compose_up "$dir")" || {
+      notify_stack_failed "up" "$name"
+      had_failure=1
+      continue
+    }
+    case "$result" in
+      started) started="${started} ${name}" ;;
+      recreated) recreated="${recreated} ${name}" ;;
+      unchanged) log "skip  $name (unchanged)" ;;
     esac
   done
+
+  log "applied stop:$(fmt_list "$stopped") start:$(fmt_list "$started") recreated:$(fmt_list "$recreated")"
+
+  notify_msg=""
+  if [ -n "$(echo "$stopped" | xargs)" ]; then
+    notify_msg="${notify_msg}stopped: $(fmt_list "$stopped")
+"
+  fi
+  if [ -n "$(echo "$started" | xargs)" ]; then
+    notify_msg="${notify_msg}started: $(fmt_list "$started")
+"
+  fi
+  if [ -n "$(echo "$recreated" | xargs)" ]; then
+    notify_msg="${notify_msg}recreated: $(fmt_list "$recreated")
+"
+  fi
+  if [ -n "$notify_msg" ]; then
+    notify "Homelab update applied" "$notify_msg" default whale
+  else
+    log "No stack changes applied"
+  fi
 
   if [ "$had_failure" -ne 0 ]; then
     log "Sync finished with failures"
