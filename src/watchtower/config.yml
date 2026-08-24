@@ -31,6 +31,7 @@ containers:
   libreoffice:
     priority: 1
     runs: true
+    depends-on: [seafile]
   pihole:
     priority: 1
     runs: true
@@ -39,7 +40,7 @@ containers:
     runs: false
   radicale:
     priority: 1
-    runs: true
+    runs: false
   seafile:
     priority: 1
     runs: true

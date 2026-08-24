@@ -87,13 +87,21 @@ compose_project_dir() {
   echo "${HOST_REPO_DIR}/$1"
 }
 
-# -f must use REPO_DIR (readable in-container); --project-directory uses HOST_REPO_DIR
-# so compose matches containers labeled with the host clone path.
+# -f and --env-file must use REPO_DIR (readable in-container).
+# --project-directory uses HOST_REPO_DIR so compose matches containers labeled
+# with the host clone path. Without an explicit --env-file, compose looks for
+# .env under HOST_REPO_DIR, which does not exist inside this container.
 compose_invoke() {
   dir="$1"
   shift
   local_file="$(compose_file "$dir")" || return 1
-  docker compose -f "$local_file" --project-directory "$(compose_project_dir "$dir")" "$@"
+  env_file="${REPO_DIR}/${dir}/.env"
+  if [ -f "$env_file" ]; then
+    docker compose -f "$local_file" --project-directory "$(compose_project_dir "$dir")" \
+      --env-file "$env_file" "$@"
+  else
+    docker compose -f "$local_file" --project-directory "$(compose_project_dir "$dir")" "$@"
+  fi
 }
 
 # True if any container in the compose project is running.
