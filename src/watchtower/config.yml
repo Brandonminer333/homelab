@@ -1,25 +1,8 @@
 containers:
-  forgejo:
-    priority: 1
-    runs: false
-    depends-on: [mariadb]
   homepage:
     priority: 1
     runs: true
-  immich:
-    priority: 1
-    runs: false
   jellyfin:
-    priority: 1
-    runs: false
-  llm:
-    priority: 1
-    runs: false
-    path: src/llm/mcp/public
-  mariadb:
-    priority: 1
-    runs: true
-  minecraft:
     priority: 1
     runs: false
   nginx:
@@ -44,7 +27,6 @@ containers:
   seafile:
     priority: 1
     runs: true
-    depends-on: [mariadb]
   vaultwarden:
     priority: 1
     runs: true

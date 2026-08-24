@@ -1,22 +1,45 @@
-# Seafile CE — files / sync; database is shared MariaDB (src/mariadb).
+# Seafile CE — files / sync. Dedicated MariaDB lives in this stack
+# (seafile-internal only; not on the homelab network).
 #
-# Prerequisites:
-#   1. Shared MariaDB is up and healthy (cd src/mariadb && docker compose up -d)
-#   2. SEAFILE_DB_PASSWORD in this .env matches src/mariadb/.env
-#   3. INIT_SEAFILE_MYSQL_ROOT_PASSWORD matches MARIADB_ROOT_PASSWORD (first boot)
-#
-# See src/mariadb/README.md.
+# Fill in before first `docker compose up`:
+#   1. cp .env.example .env
+#   2. Set MARIADB_ROOT_PASSWORD and SEAFILE_DB_PASSWORD (openssl rand -base64 32)
+#   3. JWT_PRIVATE_KEY — pwgen -s 40 1
+#   4. INIT_SEAFILE_ADMIN_EMAIL / INIT_SEAFILE_ADMIN_PASSWORD
 #
 # Layout:
-#   /opt/seafile-data → Seafile shared volume (config + libraries)
+#   /opt/seafile-data           → Seafile shared volume (config + libraries)
+#   ../../data/seafile/mariadb  → this stack's MariaDB datadir (read-write)
 #
 # Access (nginx reverse proxy on Tailscale hostname):
 #   https://lenovoflakes.tail62b305.ts.net:8444/
 #
-# Start (after shared MariaDB):
+# Start:
 #   cd src/seafile && docker compose up -d
 
 services:
+  db:
+    image: mariadb:latest
+    container_name: seafile-db
+    restart: unless-stopped
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      TZ: America/Los_Angeles
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-${INIT_SEAFILE_MYSQL_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in .env}}
+      MARIADB_AUTO_UPGRADE: "1"
+    volumes:
+      - ../../data/seafile/mariadb:/var/lib/mysql
+    networks:
+      - seafile-internal
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+
   memcached:
     image: memcached:1.6.29
     container_name: seafile-memcached
@@ -32,16 +55,19 @@ services:
     container_name: seafile
     restart: unless-stopped
     depends_on:
-      - memcached
+      db:
+        condition: service_healthy
+      memcached:
+        condition: service_started
     environment:
       TIME_ZONE: America/Los_Angeles
-      # Shared MariaDB (pre-created DBs/user — see src/mariadb/init).
-      DB_HOST: mariadb
+      # Dedicated MariaDB in this stack (hostname `db` on seafile-internal).
+      DB_HOST: db
       DB_PORT: "3306"
       DB_USER: seafile
       DB_PASSWORD: ${SEAFILE_DB_PASSWORD:?Set SEAFILE_DB_PASSWORD in .env}
-      DB_ROOT_PASSWD: ${INIT_SEAFILE_MYSQL_ROOT_PASSWORD:?Set INIT_SEAFILE_MYSQL_ROOT_PASSWORD in .env (same as MARIADB_ROOT_PASSWORD)}
-      SEAFILE_MYSQL_DB_HOST: mariadb
+      DB_ROOT_PASSWD: ${MARIADB_ROOT_PASSWORD:-${INIT_SEAFILE_MYSQL_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in .env}}
+      SEAFILE_MYSQL_DB_HOST: db
       SEAFILE_MYSQL_DB_PORT: "3306"
       SEAFILE_MYSQL_DB_USER: seafile
       SEAFILE_MYSQL_DB_PASSWORD: ${SEAFILE_DB_PASSWORD:?Set SEAFILE_DB_PASSWORD in .env}

@@ -10,7 +10,7 @@ statusStyle: dot
 layout:
   Media:
     style: row
-    columns: 3
+    columns: 1
   Cloud:
     style: row
     columns: 4

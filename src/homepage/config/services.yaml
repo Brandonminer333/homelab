@@ -8,21 +8,6 @@
         server: local
         container: jellyfin
 
-    - Immich:
-        icon: immich.png
-        href: https://lenovoflakes.tail62b305.ts.net:8449/
-        description: Photos (Seafile library)
-        siteMonitor: http://immich:2283/api/server/ping
-        server: local
-        container: immich
-
-- Gaming:
-    - Minecraft:
-        icon: minecraft.png
-        description: lenovoflakes.tail62b305.ts.net:25565
-        server: local
-        container: minecraft-server
-
 - Cloud:
     - Seafile:
         icon: seafile.png
@@ -31,14 +16,6 @@
         siteMonitor: http://seafile/
         server: local
         container: seafile
-
-    - Forgejo:
-        icon: forgejo.png
-        href: https://lenovoflakes.tail62b305.ts.net:8446/
-        description: Git
-        siteMonitor: http://forgejo:3000/
-        server: local
-        container: forgejo
 
     - Vaultwarden:
         icon: vaultwarden.png

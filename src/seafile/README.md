@@ -2,26 +2,27 @@
 
 Community Edition via `seafileltd/seafile-mc:12.0-latest`.
 
-Database: shared MariaDB (`src/mariadb`), user `seafile`, DBs `ccnet_db` / `seafile_db` / `seahub_db`. Bring MariaDB up first.
-
-Memcached runs beside Seafile on a private compose network (`seafile-internal`); only Seafile joins the shared `homelab` network for MariaDB + nginx.
+Database: dedicated MariaDB in this stack (`seafile-db`), user `seafile`, DBs `ccnet_db` / `seafile_db` / `seahub_db`. MariaDB and memcached stay on a private compose network (`seafile-internal`); only Seafile joins the shared `homelab` network for nginx.
 
 ## First-time setup
 
 ```bash
 cp .env.example .env
-# SEAFILE_DB_PASSWORD — same as src/mariadb/.env
-# INIT_SEAFILE_MYSQL_ROOT_PASSWORD — same as MARIADB_ROOT_PASSWORD
+# MARIADB_ROOT_PASSWORD / SEAFILE_DB_PASSWORD — openssl rand -base64 32
 # JWT_PRIVATE_KEY — pwgen -s 40 1
 # INIT_SEAFILE_ADMIN_EMAIL / INIT_SEAFILE_ADMIN_PASSWORD
 
-# MariaDB must already be healthy with the three Seafile DBs created:
-cd ../mariadb && docker compose up -d
-
-cd ../seafile && docker compose up -d
+cd src/seafile && docker compose up -d
 ```
 
-Data volume: `/opt/seafile-data` on the host → `/shared` in the container.
+Data volumes:
+
+| Host | Container | Notes |
+|------|-----------|-------|
+| `/opt/seafile-data` | `/shared` | Seafile config + libraries |
+| `../../data/seafile/mariadb` | `/var/lib/mysql` | This stack's MariaDB only |
+
+If Seafile was already initialized against the old shared `mariadb` hostname, update `DB_HOST` in `/opt/seafile-data/conf/` to `db` (or restore that datadir into `../../data/seafile/mariadb`). Env vars apply on first boot only.
 
 ## Access
 

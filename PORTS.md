@@ -11,12 +11,9 @@ Hostname: `lenovoflakes.tail62b305.ts.net` (Tailscale MagicDNS).
 | 8443  | Jellyfin             | nginx → jellyfin | `https://lenovoflakes.tail62b305.ts.net:8443/` |
 | 8444  | Seafile              | nginx → seafile | `https://lenovoflakes.tail62b305.ts.net:8444/` |
 | 8445  | Pi-hole admin        | nginx → pihole | `https://lenovoflakes.tail62b305.ts.net:8445/admin/` |
-| 8446  | Forgejo              | nginx → forgejo | `https://lenovoflakes.tail62b305.ts.net:8446/` |
 | 8447  | Vaultwarden          | nginx → vaultwarden | `https://lenovoflakes.tail62b305.ts.net:8447/` |
 | 8448  | Collabora (LibreOffice) | nginx → libreoffice | `https://lenovoflakes.tail62b305.ts.net:8448/` |
-| 8449  | Immich               | nginx → immich | `https://lenovoflakes.tail62b305.ts.net:8449/` |
-| 2222  | Forgejo SSH          | forgejo     | `ssh://git@lenovoflakes.tail62b305.ts.net:2222/...` |
-| 25565 | Minecraft            | minecraft   | Tailscale: `lenovoflakes.tail62b305.ts.net:25565`; public: router TCP forward + whitelist in `src/minecraft/.env` |
+| 8450  | Radicale             | nginx → radicale | `https://lenovoflakes.tail62b305.ts.net:8450/` |
 | 2586  | ntfy                 | ntfy        | `http://lenovoflakes.tail62b305.ts.net:2586` |
 
 ## Localhost-only (SSH tunnel)
@@ -33,12 +30,11 @@ Hostname: `lenovoflakes.tail62b305.ts.net` (Tailscale MagicDNS).
 | 8096 | Jellyfin           | jellyfin    | nginx proxies `:8443` → `jellyfin:8096` |
 | 80   | Seafile            | seafile     | nginx proxies `:8444` → `seafile:80` |
 | 80   | Pi-hole admin      | pihole      | nginx proxies `:8445` → `pihole` (`/admin`) |
-| 3000 | Forgejo HTTP       | forgejo     | nginx proxies `:8446` → `forgejo:3000` |
 | 80   | Vaultwarden        | vaultwarden | nginx proxies `:8447` → `vaultwarden:80` |
 | 9980 | Collabora (LibreOffice) | libreoffice | nginx proxies `:8448` → `libreoffice:9980` |
-| 2283 | Immich             | immich      | nginx proxies `:8449` → `immich:2283` |
+| 5232 | Radicale           | radicale    | nginx proxies `:8450` → `radicale:5232` |
 | 3000 | Homepage           | homepage    | nginx proxies `:443` → `homepage:3000` |
-| 3306 | MariaDB            | mariadb     | shared DB for Seafile / Forgejo; hostname `mariadb` on `homelab` only |
+| 3306 | MariaDB            | seafile     | Seafile-only DB (`seafile-db`); hostname `db` on `seafile-internal` |
 | 8191 | FlareSolverr       | qbittorrent | Prowlarr reaches `http://127.0.0.1:8191` inside the VPN netns |
 
 ## Not published (optional)
