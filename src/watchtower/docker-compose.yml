@@ -54,6 +54,8 @@ services:
     restart: unless-stopped
     environment:
       REPO_DIR: /homelab
+      # Host clone path — docker compose must use this (not /homelab) via the socket.
+      HOST_REPO_DIR: ${HOMELAB_PATH:?set HOMELAB_PATH in .env}
       GIT_BRANCH: ${GIT_BRANCH:-main}
       POLL_INTERVAL: ${POLL_INTERVAL:-300}
       # Stack enable/disable: src/watchtower/config.yml only (public, in-repo).

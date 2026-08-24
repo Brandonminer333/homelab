@@ -15,6 +15,8 @@
 set -eu
 
 REPO_DIR="${REPO_DIR:-/homelab}"
+# Host path for docker compose (daemon labels use host paths, not /homelab).
+HOST_REPO_DIR="${HOST_REPO_DIR:-$REPO_DIR}"
 BRANCH="${GIT_BRANCH:-main}"
 INTERVAL="${POLL_INTERVAL:-300}"
 # Desired stack state is always the public YAML in-repo (not .env).
@@ -62,50 +64,80 @@ stack_dir() {
   echo "src/${name}"
 }
 
-compose_file() {
+compose_file_rel() {
   dir="$1"
   if [ -f "${REPO_DIR}/${dir}/docker-compose.yml" ]; then
-    echo "${REPO_DIR}/${dir}/docker-compose.yml"
-  elif [ -f "${REPO_DIR}/${dir}/compose.yml" ]; then
-    echo "${REPO_DIR}/${dir}/compose.yml"
-  else
-    return 1
+    echo "docker-compose.yml"
+    return 0
   fi
+  if [ -f "${REPO_DIR}/${dir}/compose.yml" ]; then
+    echo "compose.yml"
+    return 0
+  fi
+  return 1
+}
+
+compose_file() {
+  dir="$1"
+  rel="$(compose_file_rel "$dir")" || return 1
+  echo "${REPO_DIR}/${dir}/${rel}"
+}
+
+compose_host_file() {
+  dir="$1"
+  rel="$(compose_file_rel "$dir")" || return 1
+  echo "${HOST_REPO_DIR}/${dir}/${rel}"
+}
+
+compose_project_dir() {
+  echo "${HOST_REPO_DIR}/$1"
 }
 
 # True if any container in the compose project is running.
 stack_running() {
   dir="$1"
-  file="$(compose_file "$dir")" || return 1
-  ids="$(docker compose -f "$file" --project-directory "${REPO_DIR}/${dir}" ps -q --status running 2>/dev/null || true)"
-  [ -n "$ids" ]
+  compose_file_rel "$dir" >/dev/null || return 1
+  file="$(compose_host_file "$dir")"
+  proj="$(compose_project_dir "$dir")"
+  ids="$(docker compose -f "$file" --project-directory "$proj" ps -q --status running 2>/dev/null || true)"
+  if [ -n "$ids" ]; then
+    return 0
+  fi
+  local_file="$(compose_file "$dir")"
+  for cname in $(yq -r '.services[].container_name // empty' "$local_file" 2>/dev/null); do
+    if [ -n "$cname" ] && docker ps -q --filter "name=^${cname}$" --filter "status=running" 2>/dev/null | grep -q .; then
+      return 0
+    fi
+  done
+  return 1
 }
 
 compose_down() {
   dir="$1"
-  file="$(compose_file "$dir")" || {
+  file="$(compose_host_file "$dir")" || {
     log "WARN: no compose file in $dir"
     return 1
   }
   log "down  $dir"
-  docker compose -f "$file" --project-directory "${REPO_DIR}/${dir}" down
+  docker compose -f "$file" --project-directory "$(compose_project_dir "$dir")" down
 }
 
 # Sorted container IDs for a stack (one line, space-separated).
 stack_container_ids() {
   dir="$1"
-  file="$(compose_file "$dir")" || return 1
-  docker compose -f "$file" --project-directory "${REPO_DIR}/${dir}" ps -q 2>/dev/null \
+  file="$(compose_host_file "$dir")" || return 1
+  docker compose -f "$file" --project-directory "$(compose_project_dir "$dir")" ps -q 2>/dev/null \
     | sort | tr '\n' ' '
 }
 
 # Apply compose up -d. On success prints one of: started, recreated, unchanged.
 compose_up() {
   dir="$1"
-  file="$(compose_file "$dir")" || {
+  file="$(compose_host_file "$dir")" || {
     log "WARN: no compose file in $dir"
     return 1
   }
+  proj="$(compose_project_dir "$dir")"
 
   was_running=0
   before_ids=""
@@ -115,7 +147,7 @@ compose_up() {
   fi
 
   log "up    $dir"
-  if ! docker compose -f "$file" --project-directory "${REPO_DIR}/${dir}" up -d 1>&2; then
+  if ! docker compose -f "$file" --project-directory "$proj" up -d 1>&2; then
     return 1
   fi
 
@@ -173,6 +205,16 @@ enabled_stack_names() {
     .containers
     | to_entries[]
     | select(.key != "watchtower")
+    | select((.value.runs | tostring | downcase) == "true")
+    | .key
+  ' "$CONFIG_FILE"
+}
+
+# All runs:true stacks including watchtower (for plan display only).
+all_enabled_stack_names() {
+  yq -r '
+    .containers
+    | to_entries[]
     | select((.value.runs | tostring | downcase) == "true")
     | .key
   ' "$CONFIG_FILE"
@@ -324,6 +366,27 @@ build_deploy_plan() {
   return 0
 }
 
+# Full up order including watchtower (plan/status display only).
+build_plan_display() {
+  if ! build_deploy_plan; then
+    return 1
+  fi
+  PLAN_TO_STOP="$DEPLOY_TO_STOP"
+  to_start_all=""
+  for name in $(all_enabled_stack_names); do
+    dir="$(stack_dir "$name")"
+    if compose_file "$dir" >/dev/null 2>&1; then
+      to_start_all="$to_start_all $name"
+    fi
+  done
+  to_start_all="$(echo "$to_start_all" | xargs)"
+  if ! PLAN_ORDERED_UP="$(order_up "$to_start_all")"; then
+    return 1
+  fi
+  PLAN_ORDERED_UP="$(echo "$PLAN_ORDERED_UP" | xargs)"
+  return 0
+}
+
 stack_run_label() {
   name="$1"
   dir="$(stack_dir "$name")"
@@ -364,21 +427,21 @@ ensure_config_ready() {
 
 cmd_plan() {
   ensure_config_ready || return 1
-  if ! build_deploy_plan; then
+  if ! build_plan_display; then
     echo "ERROR: dependency ordering failed" >&2
     return 1
   fi
 
   stop_count=0
-  for _ in $DEPLOY_TO_STOP; do stop_count=$((stop_count + 1)); done
+  for _ in $PLAN_TO_STOP; do stop_count=$((stop_count + 1)); done
   up_count=0
-  for _ in $DEPLOY_ORDERED_UP; do up_count=$((up_count + 1)); done
+  for _ in $PLAN_ORDERED_UP; do up_count=$((up_count + 1)); done
 
   echo "Phase 1 stop order (${stop_count} stacks):"
   if [ "$stop_count" -eq 0 ]; then
     echo "  (none)"
   else
-    for name in $(order_down "$DEPLOY_TO_STOP"); do
+    for name in $(order_down "$PLAN_TO_STOP"); do
       label="$(stack_run_label "$name")"
       printf '  [%s]  %s\n' "$label" "$name"
     done
@@ -389,9 +452,13 @@ cmd_plan() {
   if [ "$up_count" -eq 0 ]; then
     echo "  (none)"
   else
-    for name in $DEPLOY_ORDERED_UP; do
+    for name in $PLAN_ORDERED_UP; do
       label="$(stack_run_label "$name")"
-      printf '  [%s]  %s\n' "$label" "$name"
+      if [ "$name" = "watchtower" ]; then
+        printf '  [%s]  %s (self-managed)\n' "$label" "$name"
+      else
+        printf '  [%s]  %s\n' "$label" "$name"
+      fi
     done
   fi
 }
