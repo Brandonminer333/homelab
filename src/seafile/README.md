@@ -26,3 +26,21 @@ Data volume: `/opt/seafile-data` on the host → `/shared` in the container.
 ## Access
 
 `https://lenovoflakes.tail62b305.ts.net:8444/` (nginx → `seafile:80`)
+
+## Document editing (Collabora)
+
+In-browser editing uses Collabora Online (`src/libreoffice`). Add to the Seafile config on the host volume:
+
+```bash
+# /opt/seafile-data/conf/seahub_settings.py
+OFFICE_SERVER_TYPE = 'CollaboraOffice'
+OFFICE_WEB_APP_BASE_URL = 'https://lenovoflakes.tail62b305.ts.net:8448/hosting/discovery'
+```
+
+Restart Seafile after editing:
+
+```bash
+cd src/seafile && docker compose restart
+```
+
+Verify discovery: `curl -k https://lenovoflakes.tail62b305.ts.net:8448/hosting/discovery`

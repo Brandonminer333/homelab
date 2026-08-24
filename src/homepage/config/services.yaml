@@ -48,13 +48,13 @@
         server: local
         container: vaultwarden
 
-    - ONLYOFFICE:
-        icon: onlyoffice.png
+    - LibreOffice:
+        icon: libreoffice.png
         href: https://lenovoflakes.tail62b305.ts.net:8448/
-        description: Document editors
-        siteMonitor: http://onlyoffice/healthcheck
+        description: Document editors (Collabora)
+        siteMonitor: http://libreoffice:9980/hosting/discovery
         server: local
-        container: onlyoffice
+        container: libreoffice
 
     - Radicale:
         icon: radicale.png

@@ -14,7 +14,7 @@
 | Git Sync | watchtower |
 | Git | forgejo |
 | Password Manager | vaultwarden |
-| Document Editors | onlyoffice |
+| Document Editors | libreoffice (Collabora) |
 | Calendar / Contacts | radicale (CalDAV / CardDAV) |
 | Dashboard | homepage |
-| Database | mariadb (shared: Seafile, Forgejo, ONLYOFFICE) |
+| Database | mariadb (shared: Seafile, Forgejo) |

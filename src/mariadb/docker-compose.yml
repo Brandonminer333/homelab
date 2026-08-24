@@ -1,4 +1,4 @@
-# Shared MariaDB — one RDBMS for Seafile, Forgejo, and ONLYOFFICE.
+# Shared MariaDB — one RDBMS for Seafile and Forgejo.
 #
 # Fill in before first `docker compose up`:
 #   1. cp .env.example .env
@@ -29,7 +29,6 @@ services:
       # Consumed by ./init/01-create-app-dbs.sh on first boot only.
       SEAFILE_DB_PASSWORD: ${SEAFILE_DB_PASSWORD:?Set SEAFILE_DB_PASSWORD in .env}
       FORGEJO_DB_PASSWORD: ${FORGEJO_DB_PASSWORD:?Set FORGEJO_DB_PASSWORD in .env}
-      ONLYOFFICE_DB_PASSWORD: ${ONLYOFFICE_DB_PASSWORD:?Set ONLYOFFICE_DB_PASSWORD in .env}
     volumes:
       - ../../data/mariadb:/var/lib/mysql
       - ./init:/docker-entrypoint-initdb.d:ro

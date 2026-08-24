@@ -28,10 +28,9 @@ containers:
   ntfy:
     priority: 2
     runs: true
-  onlyoffice:
+  libreoffice:
     priority: 1
-    runs: false
-    depends-on: [mariadb]
+    runs: true
   pihole:
     priority: 1
     runs: true

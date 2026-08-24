@@ -52,6 +52,5 @@ create_seafile_dbs() {
 
 create_seafile_dbs "$SEAFILE_DB_PASSWORD"
 create_app_db forgejo "$FORGEJO_DB_PASSWORD" forgejo
-create_app_db onlyoffice "$ONLYOFFICE_DB_PASSWORD" onlyoffice
 
-echo "App databases ready: ccnet_db/seafile_db/seahub_db, forgejo, onlyoffice"
+echo "App databases ready: ccnet_db/seafile_db/seahub_db, forgejo"
