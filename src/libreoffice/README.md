@@ -4,12 +4,22 @@ LibreOffice-based document editors for WOPI clients (Seafile). Stateless — no 
 
 ## First-time setup
 
+Create `.env` on the **host** before setting `libreoffice.runs: true` in
+[`config.yml`](../watchtower/config.yml). git-sync cannot start this stack
+without it (`.env` is gitignored).
+
 ```bash
+cd src/libreoffice
 cp .env.example .env
 # Set PASSWORD (openssl rand -base64 24)
 # Confirm ALIASGROUP1 includes Seafile's public URL (:8444)
+docker compose up -d
+```
 
-cd src/libreoffice && docker compose up -d
+Or apply via git-sync after `.env` exists:
+
+```bash
+docker exec git-sync /bin/sh /homelab/src/watchtower/git-sync.sh sync
 ```
 
 ## Access
@@ -31,6 +41,7 @@ OFFICE_WEB_APP_BASE_URL = 'https://lenovoflakes.tail62b305.ts.net:8448/hosting/d
 ```bash
 curl -k https://lenovoflakes.tail62b305.ts.net:8448/hosting/discovery
 docker exec git-sync /bin/sh /homelab/src/watchtower/git-sync.sh plan
+docker exec git-sync /bin/sh /homelab/src/watchtower/git-sync.sh sync
 ```
 
 After migrating from ONLYOFFICE on the host:

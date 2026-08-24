@@ -23,6 +23,7 @@
 # Deploy progress (runs bind-mounted script; no rebuild needed):
 #   docker exec git-sync /bin/sh /homelab/src/watchtower/git-sync.sh status
 #   docker exec git-sync /bin/sh /homelab/src/watchtower/git-sync.sh plan
+#   docker exec git-sync /bin/sh /homelab/src/watchtower/git-sync.sh sync
 
 services:
   watchtower:

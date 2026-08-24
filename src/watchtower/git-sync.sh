@@ -139,6 +139,13 @@ stack_container_ids() {
   compose_invoke "$dir" ps -q 2>/dev/null | sort | tr '\n' ' '
 }
 
+# True when .env.example exists but .env is missing in the stack directory.
+stack_env_missing() {
+  dir="$1"
+  stack_root="${REPO_DIR}/${dir}"
+  [ -f "${stack_root}/.env.example" ] && [ ! -f "${stack_root}/.env" ]
+}
+
 # Apply compose up -d. On success prints one of: started, recreated, unchanged.
 compose_up() {
   dir="$1"
@@ -146,6 +153,11 @@ compose_up() {
     log "WARN: no compose file in $dir"
     return 1
   }
+
+  if stack_env_missing "$dir"; then
+    log "ERROR: ${dir} has .env.example but no .env on host — cp .env.example .env and set secrets, then re-run sync"
+    return 1
+  fi
 
   was_running=0
   before_ids=""
@@ -623,6 +635,10 @@ case "${1:-}" in
     ;;
   status)
     cmd_status
+    exit $?
+    ;;
+  sync)
+    sync_from_config
     exit $?
     ;;
 esac
