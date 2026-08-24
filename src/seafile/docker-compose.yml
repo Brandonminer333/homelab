@@ -25,7 +25,7 @@ services:
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
       TZ: America/Los_Angeles
-      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-${INIT_SEAFILE_MYSQL_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in .env}}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in .env}
       MARIADB_AUTO_UPGRADE: "1"
     volumes:
       - ../../data/seafile/mariadb:/var/lib/mysql
@@ -66,7 +66,7 @@ services:
       DB_PORT: "3306"
       DB_USER: seafile
       DB_PASSWORD: ${SEAFILE_DB_PASSWORD:?Set SEAFILE_DB_PASSWORD in .env}
-      DB_ROOT_PASSWD: ${MARIADB_ROOT_PASSWORD:-${INIT_SEAFILE_MYSQL_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in .env}}
+      DB_ROOT_PASSWD: ${MARIADB_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in .env}
       SEAFILE_MYSQL_DB_HOST: db
       SEAFILE_MYSQL_DB_PORT: "3306"
       SEAFILE_MYSQL_DB_USER: seafile
