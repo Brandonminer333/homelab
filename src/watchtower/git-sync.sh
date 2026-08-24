@@ -19,6 +19,7 @@ BRANCH="${GIT_BRANCH:-main}"
 INTERVAL="${POLL_INTERVAL:-300}"
 # Desired stack state is always the public YAML in-repo (not .env).
 CONFIG_FILE="${REPO_DIR}/src/watchtower/config.yml"
+STATUS_FILE="${REPO_DIR}/.git-sync-status"
 NTFY_URL="${NTFY_URL:-http://ntfy/homelab}"
 
 log() {
@@ -266,6 +267,171 @@ order_up() {
   done
 }
 
+read_status_field() {
+  field="$1"
+  if [ -f "$STATUS_FILE" ]; then
+    grep "^${field}=" "$STATUS_FILE" 2>/dev/null | cut -d= -f2- || true
+  fi
+}
+
+# Usage: write_status STATE PHASE CURRENT UP_ORDER UP_INDEX UP_TOTAL
+write_status() {
+  state="$1"
+  phase="$2"
+  current="$3"
+  up_order="$4"
+  up_index="$5"
+  up_total="$6"
+  {
+    echo "state=${state}"
+    echo "phase=${phase}"
+    echo "current=${current}"
+    echo "up_order=${up_order}"
+    echo "up_index=${up_index}"
+    echo "up_total=${up_total}"
+    echo "updated_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  } > "$STATUS_FILE"
+}
+
+# Sets DEPLOY_TO_STOP, DEPLOY_TO_START, DEPLOY_ORDERED_UP (space-separated).
+build_deploy_plan() {
+  DEPLOY_TO_STOP=""
+  DEPLOY_TO_START=""
+  DEPLOY_ORDERED_UP=""
+
+  for name in $(disabled_stack_names); do
+    dir="$(stack_dir "$name")"
+    if compose_file "$dir" >/dev/null 2>&1; then
+      DEPLOY_TO_STOP="$DEPLOY_TO_STOP $name"
+    fi
+  done
+  DEPLOY_TO_STOP="$(echo "$DEPLOY_TO_STOP" | xargs)"
+
+  for name in $(enabled_stack_names); do
+    dir="$(stack_dir "$name")"
+    if compose_file "$dir" >/dev/null 2>&1; then
+      DEPLOY_TO_START="$DEPLOY_TO_START $name"
+    else
+      log "WARN: $name.runs is true but no compose file in $dir — skipping"
+    fi
+  done
+  DEPLOY_TO_START="$(echo "$DEPLOY_TO_START" | xargs)"
+
+  if ! DEPLOY_ORDERED_UP="$(order_up "$DEPLOY_TO_START")"; then
+    return 1
+  fi
+  DEPLOY_ORDERED_UP="$(echo "$DEPLOY_ORDERED_UP" | xargs)"
+  return 0
+}
+
+stack_run_label() {
+  name="$1"
+  dir="$(stack_dir "$name")"
+  if stack_running "$dir" 2>/dev/null; then
+    echo running
+  else
+    echo stopped
+  fi
+}
+
+print_up_order_progress() {
+  order="$1"
+  current="$2"
+  seen_current=0
+  for name in $order; do
+    if [ "$seen_current" -eq 0 ] && [ "$name" = "$current" ]; then
+      printf '  [current]  %s\n' "$name"
+      seen_current=1
+    elif [ "$seen_current" -eq 1 ]; then
+      printf '  [pending]  %s\n' "$name"
+    else
+      printf '  [done]     %s\n' "$name"
+    fi
+  done
+}
+
+ensure_config_ready() {
+  if [ ! -f "$CONFIG_FILE" ]; then
+    echo "ERROR: config not found at $CONFIG_FILE" >&2
+    return 1
+  fi
+  if ! command -v yq >/dev/null 2>&1; then
+    echo "ERROR: yq is required to parse $CONFIG_FILE" >&2
+    return 1
+  fi
+  return 0
+}
+
+cmd_plan() {
+  ensure_config_ready || return 1
+  if ! build_deploy_plan; then
+    echo "ERROR: dependency ordering failed" >&2
+    return 1
+  fi
+
+  stop_count=0
+  for _ in $DEPLOY_TO_STOP; do stop_count=$((stop_count + 1)); done
+  up_count=0
+  for _ in $DEPLOY_ORDERED_UP; do up_count=$((up_count + 1)); done
+
+  echo "Phase 1 stop order (${stop_count} stacks):"
+  if [ "$stop_count" -eq 0 ]; then
+    echo "  (none)"
+  else
+    for name in $(order_down "$DEPLOY_TO_STOP"); do
+      label="$(stack_run_label "$name")"
+      printf '  [%s]  %s\n' "$label" "$name"
+    done
+  fi
+
+  echo ""
+  echo "Phase 2 up order (${up_count} stacks):"
+  if [ "$up_count" -eq 0 ]; then
+    echo "  (none)"
+  else
+    for name in $DEPLOY_ORDERED_UP; do
+      label="$(stack_run_label "$name")"
+      printf '  [%s]  %s\n' "$label" "$name"
+    done
+  fi
+}
+
+cmd_status() {
+  ensure_config_ready || return 1
+
+  state="$(read_status_field state)"
+  phase="$(read_status_field phase)"
+  current="$(read_status_field current)"
+  up_order="$(read_status_field up_order)"
+  up_index="$(read_status_field up_index)"
+  up_total="$(read_status_field up_total)"
+  updated_at="$(read_status_field updated_at)"
+
+  if [ "$state" = "syncing" ]; then
+    if [ "$phase" = "up" ]; then
+      echo "syncing — phase 2: up (${up_index}/${up_total})"
+    else
+      echo "syncing — phase 1: stop"
+    fi
+    echo "current: ${current:-unknown}"
+    echo ""
+    if [ "$phase" = "up" ] && [ -n "$up_order" ]; then
+      print_up_order_progress "$up_order" "$current"
+    fi
+    return 0
+  fi
+
+  if [ "$phase" = "done" ] && [ -n "$updated_at" ]; then
+    echo "idle (last sync finished ${updated_at})"
+  elif [ "$phase" = "error" ] && [ -n "$updated_at" ]; then
+    echo "idle (last sync failed ${updated_at})"
+  else
+    echo "idle"
+  fi
+  echo ""
+  cmd_plan
+}
+
 sync_from_config() {
   if [ ! -f "$CONFIG_FILE" ]; then
     log "ERROR: config not found at $CONFIG_FILE"
@@ -281,43 +447,34 @@ sync_from_config() {
 
   log "Syncing stacks from $CONFIG_FILE"
 
-  to_stop=""
-  to_start=""
-
-  # Fail closed: only stacks with runs == true are started; everything else stops.
-  for name in $(disabled_stack_names); do
-    dir="$(stack_dir "$name")"
-    if compose_file "$dir" >/dev/null 2>&1; then
-      to_stop="$to_stop $name"
-    fi
-  done
-
-  for name in $(enabled_stack_names); do
-    dir="$(stack_dir "$name")"
-    if compose_file "$dir" >/dev/null 2>&1; then
-      to_start="$to_start $name"
-    else
-      log "WARN: $name.runs is true but no compose file in $dir — skipping"
-    fi
-  done
-
-  ordered=""
-  if ! ordered="$(order_up "$to_start")"; then
+  if ! build_deploy_plan; then
+    write_status idle error "" "" 0 0
     notify "Homelab deploy failed" "dependency ordering failed; see git-sync logs" high
     return 1
   fi
 
+  to_stop="$DEPLOY_TO_STOP"
+  ordered="$DEPLOY_ORDERED_UP"
+
+  up_total=0
+  for _ in $ordered; do up_total=$((up_total + 1)); done
+
   log "plan stop:$(fmt_list "$to_stop")"
   log "order up:$(fmt_list "$ordered")"
+
+  write_status syncing stop "" "$ordered" 0 "$up_total"
 
   had_failure=0
   stopped=""
   started=""
   recreated=""
+  last_current=""
 
   # Phase 1: stop every runs:false stack before touching enabled ones.
   log "Phase 1: stopping disabled stacks"
   for name in $(order_down "$to_stop"); do
+    last_current="$name"
+    write_status syncing stop "$name" "$ordered" 0 "$up_total"
     dir="$(stack_dir "$name")"
     if stack_running "$dir" 2>/dev/null; then
       if compose_down "$dir"; then
@@ -333,7 +490,11 @@ sync_from_config() {
 
   # Phase 2: apply compose up -d for runs:true stacks in priority order.
   log "Phase 2: applying enabled stacks"
+  up_index=0
   for name in $ordered; do
+    up_index=$((up_index + 1))
+    last_current="$name"
+    write_status syncing up "$name" "$ordered" "$up_index" "$up_total"
     dir="$(stack_dir "$name")"
     result="$(compose_up "$dir")" || {
       notify_stack_failed "up" "$name"
@@ -369,17 +530,30 @@ sync_from_config() {
   fi
 
   if [ "$had_failure" -ne 0 ]; then
+    write_status idle error "$last_current" "$ordered" "$up_index" "$up_total"
     log "Sync finished with failures"
     return 1
   fi
 
+  write_status idle done "" "$ordered" "$up_total" "$up_total"
   log "Sync finished"
 }
 
+cd "$REPO_DIR"
+
+case "${1:-}" in
+  plan)
+    cmd_plan
+    exit $?
+    ;;
+  status)
+    cmd_status
+    exit $?
+    ;;
+esac
+
 # Bind-mounted repos often fail ownership checks when the container runs as root.
 git config --global --add safe.directory "$REPO_DIR"
-
-cd "$REPO_DIR"
 
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   log "ERROR: $REPO_DIR is not a git repository"

@@ -19,6 +19,10 @@
 #
 # Start:
 #   cd src/watchtower && docker compose up -d --build
+#
+# Deploy progress (runs bind-mounted script; no rebuild needed):
+#   docker exec git-sync /bin/sh /homelab/src/watchtower/git-sync.sh status
+#   docker exec git-sync /bin/sh /homelab/src/watchtower/git-sync.sh plan
 
 services:
   watchtower:
