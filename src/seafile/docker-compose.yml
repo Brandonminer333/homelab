@@ -1,44 +1,57 @@
-# Seafile CE — files / sync. Dedicated MariaDB lives in this stack
-# (seafile-internal only; not on the homelab network).
+# Seafile CE — files / sync. Dedicated MariaDB + memcached live in this stack on
+# a private compose network (`seafile-internal`); only Seafile joins `homelab`
+# so nginx can reach it. No host ports are published.
 #
 # Fill in before first `docker compose up`:
 #   1. cp .env.example .env
-#   2. Set MARIADB_ROOT_PASSWORD and SEAFILE_DB_PASSWORD (openssl rand -base64 32)
-#   3. JWT_PRIVATE_KEY — pwgen -s 40 1
+#   2. MARIADB_ROOT_PASSWORD and SEAFILE_DB_PASSWORD — openssl rand -base64 32
+#   3. JWT_PRIVATE_KEY — pwgen -s 40 1 (min 32 chars)
 #   4. INIT_SEAFILE_ADMIN_EMAIL / INIT_SEAFILE_ADMIN_PASSWORD
 #
+# The INIT_* / DB name vars are read on first boot only. After that, Seafile
+# reads /opt/seafile-data/conf/*; change settings there, not here.
+#
 # Layout:
-#   /opt/seafile-data           → Seafile shared volume (config + libraries)
+#   /opt/seafile-data           → Seafile shared volume (config, logs, libraries)
 #   ../../data/seafile/mariadb  → this stack's MariaDB datadir (read-write)
 #
-# Access (nginx reverse proxy on Tailscale hostname):
+# Access (nginx terminates TLS and proxies :8444 → seafile:80):
 #   https://lenovoflakes.tail62b305.ts.net:8444/
 #
 # Start:
 #   cd src/seafile && docker compose up -d
+#
+# Clean slate (destroys all libraries and users):
+#   docker compose down && sudo rm -rf /opt/seafile-data ../../data/seafile/mariadb/*
 
 services:
   db:
-    image: mariadb:latest
+    # Pinned to the MariaDB LTS that upstream Seafile 12 ships with. A datadir
+    # cannot be opened by an older major version, so bump this deliberately
+    # (hence no Watchtower label below) and back up ../../data/seafile first.
+    image: mariadb:10.11
     container_name: seafile-db
     restart: unless-stopped
+    # utf8mb4 server-wide so non-ASCII filenames and emoji survive round-trips.
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
       TZ: America/Los_Angeles
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in .env}
       MARIADB_AUTO_UPGRADE: "1"
+      MYSQL_LOG_CONSOLE: "true"
     volumes:
       - ../../data/seafile/mariadb:/var/lib/mysql
     networks:
       - seafile-internal
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 10s
+      test: ["CMD", "healthcheck.sh", "--connect", "--mariadbupgrade", "--innodb_initialized"]
+      interval: 20s
       timeout: 5s
-      retries: 5
+      retries: 10
       start_period: 30s
     labels:
-      - com.centurylinklabs.watchtower.enable=true
+      # Never auto-upgrade the database major version out from under Seafile.
+      - com.centurylinklabs.watchtower.enable=false
 
   memcached:
     image: memcached:1.6.29
@@ -67,20 +80,18 @@ services:
       DB_USER: seafile
       DB_PASSWORD: ${SEAFILE_DB_PASSWORD:?Set SEAFILE_DB_PASSWORD in .env}
       DB_ROOT_PASSWD: ${MARIADB_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in .env}
-      SEAFILE_MYSQL_DB_HOST: db
-      SEAFILE_MYSQL_DB_PORT: "3306"
-      SEAFILE_MYSQL_DB_USER: seafile
-      SEAFILE_MYSQL_DB_PASSWORD: ${SEAFILE_DB_PASSWORD:?Set SEAFILE_DB_PASSWORD in .env}
       SEAFILE_MYSQL_DB_CCNET_DB_NAME: ccnet_db
       SEAFILE_MYSQL_DB_SEAFILE_DB_NAME: seafile_db
       SEAFILE_MYSQL_DB_SEAHUB_DB_NAME: seahub_db
-      # Public URL (nginx TLS on :8444)
+      # Must match the public URL, port included, or sync clients and share
+      # links generate unreachable addresses.
       SEAFILE_SERVER_HOSTNAME: ${SEAFILE_SERVER_HOSTNAME:-lenovoflakes.tail62b305.ts.net:8444}
       SEAFILE_SERVER_PROTOCOL: https
       SITE_ROOT: /
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?Set JWT_PRIVATE_KEY in .env (pwgen -s 40 1)}
       INIT_SEAFILE_ADMIN_EMAIL: ${INIT_SEAFILE_ADMIN_EMAIL:?Set INIT_SEAFILE_ADMIN_EMAIL in .env}
       INIT_SEAFILE_ADMIN_PASSWORD: ${INIT_SEAFILE_ADMIN_PASSWORD:?Set INIT_SEAFILE_ADMIN_PASSWORD in .env}
+      # Document editing comes from Collabora (src/libreoffice), not SeaDoc.
       ENABLE_SEADOC: "false"
       SEAFILE_LOG_TO_STDOUT: "true"
       NON_ROOT: "false"
