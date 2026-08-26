@@ -33,26 +33,46 @@ services:
     image: seafileltd/seafile-mc:13.0-latest
     container_name: seafile
     restart: unless-stopped
+    # The image ships no internal defaults for these — setup-seafile-mysql.py reads
+    # them straight from the environment, so the full upstream set is passed through
+    # even where a value only matters for a feature that is switched off.
     environment:
       TIME_ZONE: America/Los_Angeles
       # Public host:port behind nginx — Seafile builds absolute links from these.
       SEAFILE_SERVER_HOSTNAME: lenovoflakes.tail62b305.ts.net:8444
       SEAFILE_SERVER_PROTOCOL: https
+      SITE_ROOT: /
+      NON_ROOT: "false"
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?Set JWT_PRIVATE_KEY in .env}
+      SEAFILE_LOG_TO_STDOUT: "false"
+      ENABLE_GO_FILESERVER: "true"
       SEAFILE_MYSQL_DB_HOST: db
       SEAFILE_MYSQL_DB_PORT: 3306
       SEAFILE_MYSQL_DB_USER: ${SEAFILE_MYSQL_DB_USER:-seafile}
       SEAFILE_MYSQL_DB_PASSWORD: ${SEAFILE_MYSQL_DB_PASSWORD:?Set SEAFILE_MYSQL_DB_PASSWORD in .env}
+      SEAFILE_MYSQL_DB_CCNET_DB_NAME: ccnet_db
+      SEAFILE_MYSQL_DB_SEAFILE_DB_NAME: seafile_db
+      SEAFILE_MYSQL_DB_SEAHUB_DB_NAME: seahub_db
       INIT_SEAFILE_MYSQL_ROOT_PASSWORD: ${INIT_SEAFILE_MYSQL_ROOT_PASSWORD:?Set INIT_SEAFILE_MYSQL_ROOT_PASSWORD in .env}
       INIT_SEAFILE_ADMIN_EMAIL: ${INIT_SEAFILE_ADMIN_EMAIL:?Set INIT_SEAFILE_ADMIN_EMAIL in .env}
       INIT_SEAFILE_ADMIN_PASSWORD: ${INIT_SEAFILE_ADMIN_PASSWORD:?Set INIT_SEAFILE_ADMIN_PASSWORD in .env}
       CACHE_PROVIDER: redis
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+      MEMCACHED_HOST: memcached
+      MEMCACHED_PORT: 11211
       # Documents are edited in Collabora (:8448), so the SeaDoc stack is not deployed.
       ENABLE_SEADOC: "false"
+      SEADOC_SERVER_URL: https://lenovoflakes.tail62b305.ts.net:8444/sdoc-server
       ENABLE_NOTIFICATION_SERVER: "false"
+      INNER_NOTIFICATION_SERVER_URL: http://notification-server:8083
+      NOTIFICATION_SERVER_URL: https://lenovoflakes.tail62b305.ts.net:8444/notification
       ENABLE_SEAFILE_AI: "false"
+      ENABLE_FACE_RECOGNITION: "false"
+      SEAFILE_AI_SERVER_URL: http://seafile-ai:8888
+      SEAFILE_AI_SECRET_KEY: ${JWT_PRIVATE_KEY:?Set JWT_PRIVATE_KEY in .env}
+      MD_FILE_COUNT_LIMIT: 100000
     volumes:
       - ../../data/seafile/shared:/shared
     depends_on:
