@@ -1,104 +1,113 @@
-# Seafile CE — files / sync. Dedicated MariaDB + memcached live in this stack on
-# a private compose network (`seafile-internal`); only Seafile joins `homelab`
-# so nginx can reach it. No host ports are published.
+# Seafile CE — self-hosted file drive (Seafile 13 + MariaDB + Redis).
 #
 # Fill in before first `docker compose up`:
 #   1. cp .env.example .env
-#   2. MARIADB_ROOT_PASSWORD and SEAFILE_DB_PASSWORD — openssl rand -base64 32
-#   3. JWT_PRIVATE_KEY — pwgen -s 40 1 (min 32 chars)
-#   4. INIT_SEAFILE_ADMIN_EMAIL / INIT_SEAFILE_ADMIN_PASSWORD
-#
-# The INIT_* / DB name vars are read on first boot only. After that, Seafile
-# reads /opt/seafile-data/conf/*; change settings there, not here.
+#   2. Set SEAFILE_MYSQL_DB_PASSWORD and INIT_SEAFILE_MYSQL_ROOT_PASSWORD (openssl rand -base64 24)
+#   3. Set JWT_PRIVATE_KEY (openssl rand -hex 32)
+#   4. Set INIT_SEAFILE_ADMIN_EMAIL / INIT_SEAFILE_ADMIN_PASSWORD — first admin account.
+#      INIT_* values are read on the first start only; afterwards use
+#      `docker exec -it seafile /opt/seafile/seafile-server-latest/reset-admin.sh`
 #
 # Layout:
-#   /opt/seafile-data           → Seafile shared volume (config, logs, libraries)
-#   ../../data/seafile/mariadb  → this stack's MariaDB datadir (read-write)
+#   ../../data/seafile/shared   → Seafile conf, libraries, logs (/shared in the container)
+#   ../../data/seafile/mariadb  → MariaDB data files
 #
-# Access (nginx terminates TLS and proxies :8444 → seafile:80):
+# Access (nginx reverse proxy on Tailscale hostname):
 #   https://lenovoflakes.tail62b305.ts.net:8444/
+#
+#   Seafile listens on the homelab Docker network only (no host publish).
+#   nginx terminates TLS and proxies :8444 → seafile:80.
+#   db and redis stay on seafile-internal, unreachable from other stacks.
+#
+# Collabora (LibreOffice) — after the first start, append to
+# ../../data/seafile/shared/seafile/conf/seahub_settings.py and restart:
+#   OFFICE_SERVER_TYPE = 'CollaboraOffice'
+#   OFFICE_WEB_APP_BASE_URL = 'https://lenovoflakes.tail62b305.ts.net:8448/hosting/discovery'
 #
 # Start:
 #   cd src/seafile && docker compose up -d
-#
-# Clean slate (destroys all libraries and users):
-#   docker compose down && sudo rm -rf /opt/seafile-data ../../data/seafile/mariadb/*
 
 services:
+  seafile:
+    # Track 13.0 patches; a major bump needs the manual upgrade steps in the Seafile manual.
+    image: seafileltd/seafile-mc:13.0-latest
+    container_name: seafile
+    restart: unless-stopped
+    environment:
+      TIME_ZONE: America/Los_Angeles
+      # Public host:port behind nginx — Seafile builds absolute links from these.
+      SEAFILE_SERVER_HOSTNAME: lenovoflakes.tail62b305.ts.net:8444
+      SEAFILE_SERVER_PROTOCOL: https
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?Set JWT_PRIVATE_KEY in .env}
+      SEAFILE_MYSQL_DB_HOST: db
+      SEAFILE_MYSQL_DB_PORT: 3306
+      SEAFILE_MYSQL_DB_USER: ${SEAFILE_MYSQL_DB_USER:-seafile}
+      SEAFILE_MYSQL_DB_PASSWORD: ${SEAFILE_MYSQL_DB_PASSWORD:?Set SEAFILE_MYSQL_DB_PASSWORD in .env}
+      INIT_SEAFILE_MYSQL_ROOT_PASSWORD: ${INIT_SEAFILE_MYSQL_ROOT_PASSWORD:?Set INIT_SEAFILE_MYSQL_ROOT_PASSWORD in .env}
+      INIT_SEAFILE_ADMIN_EMAIL: ${INIT_SEAFILE_ADMIN_EMAIL:?Set INIT_SEAFILE_ADMIN_EMAIL in .env}
+      INIT_SEAFILE_ADMIN_PASSWORD: ${INIT_SEAFILE_ADMIN_PASSWORD:?Set INIT_SEAFILE_ADMIN_PASSWORD in .env}
+      CACHE_PROVIDER: redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # Documents are edited in Collabora (:8448), so the SeaDoc stack is not deployed.
+      ENABLE_SEADOC: "false"
+      ENABLE_NOTIFICATION_SERVER: "false"
+      ENABLE_SEAFILE_AI: "false"
+    volumes:
+      - ../../data/seafile/shared:/shared
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    networks:
+      - homelab
+      - seafile-internal
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+
   db:
-    # Pinned to the MariaDB LTS that upstream Seafile 12 ships with. A datadir
-    # cannot be opened by an older major version, so bump this deliberately
-    # (hence no Watchtower label below) and back up ../../data/seafile first.
     image: mariadb:10.11
     container_name: seafile-db
     restart: unless-stopped
-    # utf8mb4 server-wide so non-ASCII filenames and emoji survive round-trips.
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
       TZ: America/Los_Angeles
-      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in .env}
-      MARIADB_AUTO_UPGRADE: "1"
+      MYSQL_ROOT_PASSWORD: ${INIT_SEAFILE_MYSQL_ROOT_PASSWORD:?Set INIT_SEAFILE_MYSQL_ROOT_PASSWORD in .env}
       MYSQL_LOG_CONSOLE: "true"
+      MARIADB_AUTO_UPGRADE: "1"
     volumes:
       - ../../data/seafile/mariadb:/var/lib/mysql
-    networks:
-      - seafile-internal
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--mariadbupgrade", "--innodb_initialized"]
+      test: ["CMD", "/usr/local/bin/healthcheck.sh", "--connect", "--mariadbupgrade", "--innodb_initialized"]
       interval: 20s
       timeout: 5s
       retries: 10
       start_period: 30s
-    labels:
-      # Never auto-upgrade the database major version out from under Seafile.
-      - com.centurylinklabs.watchtower.enable=false
-
-  memcached:
-    image: memcached:1.6.29
-    container_name: seafile-memcached
-    restart: unless-stopped
-    entrypoint: memcached -m 256
     networks:
       - seafile-internal
     labels:
       - com.centurylinklabs.watchtower.enable=true
 
-  seafile:
-    image: seafileltd/seafile-mc:12.0-latest
-    container_name: seafile
+  redis:
+    image: redis:8-alpine
+    container_name: seafile-redis
     restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-      memcached:
-        condition: service_started
+    # Cache only — nothing here needs to survive a restart.
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
     environment:
-      TIME_ZONE: America/Los_Angeles
-      # Dedicated MariaDB in this stack (hostname `db` on seafile-internal).
-      DB_HOST: db
-      DB_PORT: "3306"
-      DB_USER: seafile
-      DB_PASSWORD: ${SEAFILE_DB_PASSWORD:?Set SEAFILE_DB_PASSWORD in .env}
-      DB_ROOT_PASSWD: ${MARIADB_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in .env}
-      SEAFILE_MYSQL_DB_CCNET_DB_NAME: ccnet_db
-      SEAFILE_MYSQL_DB_SEAFILE_DB_NAME: seafile_db
-      SEAFILE_MYSQL_DB_SEAHUB_DB_NAME: seahub_db
-      # Must match the public URL, port included, or sync clients and share
-      # links generate unreachable addresses.
-      SEAFILE_SERVER_HOSTNAME: ${SEAFILE_SERVER_HOSTNAME:-lenovoflakes.tail62b305.ts.net:8444}
-      SEAFILE_SERVER_PROTOCOL: https
-      SITE_ROOT: /
-      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?Set JWT_PRIVATE_KEY in .env (pwgen -s 40 1)}
-      INIT_SEAFILE_ADMIN_EMAIL: ${INIT_SEAFILE_ADMIN_EMAIL:?Set INIT_SEAFILE_ADMIN_EMAIL in .env}
-      INIT_SEAFILE_ADMIN_PASSWORD: ${INIT_SEAFILE_ADMIN_PASSWORD:?Set INIT_SEAFILE_ADMIN_PASSWORD in .env}
-      # Document editing comes from Collabora (src/libreoffice), not SeaDoc.
-      ENABLE_SEADOC: "false"
-      SEAFILE_LOG_TO_STDOUT: "true"
-      NON_ROOT: "false"
-    volumes:
-      - /opt/seafile-data:/shared
+      TZ: America/Los_Angeles
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     networks:
-      - homelab
       - seafile-internal
     labels:
       - com.centurylinklabs.watchtower.enable=true
@@ -107,4 +116,4 @@ networks:
   homelab:
     external: true
   seafile-internal:
-    driver: bridge
+    name: seafile-internal
