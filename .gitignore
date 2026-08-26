@@ -10,8 +10,6 @@ data/**
 !data/**/
 !data/**/.gitkeep
 
-src/radicale/config/users # htpasswd credentials (create from users.example)
-
 src/homepage/config/logs/** # Homepage runtime logs — keep directory via .gitkeep
 !src/homepage/config/logs/
 !src/homepage/config/logs/.gitkeep

@@ -1,6 +1,0 @@
-# Copy to `users` and replace with real htpasswd lines (bcrypt).
-# Example generation:
-#   docker run --rm -it tomsquest/docker-radicale htpasswd -B -c /dev/stdout branflakes
-#
-# Format (one user per line):
-#   username:$2y$05$...

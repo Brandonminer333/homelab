@@ -4,12 +4,11 @@
 
 | Service | Software |
 | Media Server | jellyfin |
-| File Drive | Seafile |
+| File Drive / Calendar / Contacts | Nextcloud |
 | Notification Server | nfty |
 | DNS | pihole
 | Torrenting | qbittorrent |
 | Git Sync | watchtower |
 | Password Manager | vaultwarden |
-| Document Editors | libreoffice (Collabora) |
-| Calendar / Contacts | radicale (CalDAV / CardDAV) |
+| Document Editors | Euro-Office (via Nextcloud) |
 | Dashboard | homepage |

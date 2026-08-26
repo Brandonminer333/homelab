@@ -9,12 +9,15 @@ Hostname: `lenovoflakes.tail62b305.ts.net` (Tailscale MagicDNS).
 | 80    | HTTP → HTTPS         | nginx       | redirect to `:443` |
 | 443   | Homepage             | nginx → homepage | `https://lenovoflakes.tail62b305.ts.net/` |
 | 8443  | Jellyfin             | nginx → jellyfin | `https://lenovoflakes.tail62b305.ts.net:8443/` |
-| 8444  | Seafile              | nginx → seafile | `https://lenovoflakes.tail62b305.ts.net:8444/` |
+| 8444  | Nextcloud            | nginx → nextcloud | `https://lenovoflakes.tail62b305.ts.net:8444/` |
 | 8445  | Pi-hole admin        | nginx → pihole | `https://lenovoflakes.tail62b305.ts.net:8445/admin/` |
 | 8447  | Vaultwarden          | nginx → vaultwarden | `https://lenovoflakes.tail62b305.ts.net:8447/` |
-| 8448  | Collabora (LibreOffice) | nginx → libreoffice | `https://lenovoflakes.tail62b305.ts.net:8448/` |
-| 8450  | Radicale             | nginx → radicale | `https://lenovoflakes.tail62b305.ts.net:8450/` |
+| 8448  | Euro-Office          | nginx → euro-office | `https://lenovoflakes.tail62b305.ts.net:8448/` |
 | 2586  | ntfy                 | ntfy        | `http://lenovoflakes.tail62b305.ts.net:2586` |
+
+Nextcloud reuses Seafile's old `:8444`; the upstream-recommended `:8080` is already
+taken by qBittorrent. CalDAV/CardDAV clients use
+`https://lenovoflakes.tail62b305.ts.net:8444/remote.php/dav` (was Radicale on `:8450`).
 
 ## Localhost-only (SSH tunnel)
 
@@ -28,13 +31,13 @@ Hostname: `lenovoflakes.tail62b305.ts.net` (Tailscale MagicDNS).
 | Port | Service            | Stack       | Notes |
 |------|--------------------|-------------|-------|
 | 8096 | Jellyfin           | jellyfin    | nginx proxies `:8443` → `jellyfin:8096` |
-| 80   | Seafile            | seafile     | nginx proxies `:8444` → `seafile:80` |
+| 80   | Nextcloud          | nextcloud   | nginx proxies `:8444` → `nextcloud:80` |
 | 80   | Pi-hole admin      | pihole      | nginx proxies `:8445` → `pihole` (`/admin`) |
 | 80   | Vaultwarden        | vaultwarden | nginx proxies `:8447` → `vaultwarden:80` |
-| 9980 | Collabora (LibreOffice) | libreoffice | nginx proxies `:8448` → `libreoffice:9980` |
-| 5232 | Radicale           | radicale    | nginx proxies `:8450` → `radicale:5232` |
+| 80   | Euro-Office        | nextcloud   | nginx proxies `:8448` → `euro-office:80` |
 | 3000 | Homepage           | homepage    | nginx proxies `:443` → `homepage:3000` |
-| 3306 | MariaDB            | seafile     | Seafile-only DB (`seafile-db`); hostname `db` on `seafile-internal` |
+| 3306 | MariaDB            | nextcloud   | Nextcloud-only DB (`nextcloud-db`); hostname `db` on `nextcloud-internal` |
+| 6379 | Redis              | nextcloud   | file locking / cache (`nextcloud-redis`) on `nextcloud-internal` |
 | 8191 | FlareSolverr       | qbittorrent | Prowlarr reaches `http://127.0.0.1:8191` inside the VPN netns |
 
 ## Not published (optional)

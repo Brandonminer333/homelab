@@ -9,13 +9,13 @@
         container: jellyfin
 
 - Cloud:
-    - Seafile:
-        icon: seafile.png
+    - Nextcloud:
+        icon: nextcloud.png
         href: https://lenovoflakes.tail62b305.ts.net:8444/
-        description: Files & sync
-        siteMonitor: http://seafile/
+        description: Files, calendars & contacts
+        siteMonitor: http://nextcloud/status.php
         server: local
-        container: seafile
+        container: nextcloud
 
     - Vaultwarden:
         icon: vaultwarden.png
@@ -25,21 +25,13 @@
         server: local
         container: vaultwarden
 
-    - LibreOffice:
-        icon: libreoffice.png
+    - Euro-Office:
+        icon: onlyoffice.png
         href: https://lenovoflakes.tail62b305.ts.net:8448/
-        description: Document editors (Collabora)
-        siteMonitor: http://libreoffice:9980/hosting/discovery
+        description: Document editors (Nextcloud Office)
+        siteMonitor: http://euro-office/healthcheck
         server: local
-        container: libreoffice
-
-    - Radicale:
-        icon: radicale.png
-        href: https://lenovoflakes.tail62b305.ts.net:8450/
-        description: CalDAV / CardDAV
-        siteMonitor: http://radicale:5232/
-        server: local
-        container: radicale
+        container: euro-office
 
 - Network:
     - Pi-hole:

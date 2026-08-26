@@ -11,22 +11,15 @@ containers:
   ntfy:
     priority: 2
     runs: true
-  libreoffice:
+  nextcloud:
     priority: 1
     runs: true
-    depends-on: [seafile]
   pihole:
     priority: 1
     runs: true
   qbittorrent:
     priority: 1
     runs: false
-  radicale:
-    priority: 1
-    runs: false
-  seafile:
-    priority: 1
-    runs: true
   vaultwarden:
     priority: 1
     runs: true
