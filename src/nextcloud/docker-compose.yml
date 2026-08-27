@@ -1,214 +1,51 @@
-# Nextcloud — self-hosted file drive + calendars/contacts (CalDAV/CardDAV),
-# replacing the retired Seafile and Radicale stacks. Includes Euro-Office
-# Document Server for in-browser document editing (Nextcloud Office connector).
-#
-# Fill in before first `docker compose up`:
-#   1. cp .env.example .env
-#   2. Set MYSQL_PASSWORD and MYSQL_ROOT_PASSWORD (openssl rand -base64 24)
-#   3. Set JWT_SECRET (openssl rand -hex 32) — shared with Euro-Office
-#   4. Set NEXTCLOUD_ADMIN_USER / NEXTCLOUD_ADMIN_PASSWORD — first admin account.
-#      These are read on the first start only; afterwards use
-#      `docker exec -u www-data nextcloud php occ user:resetpassword USER`
-#
-# Layout:
-#   ../../data/nextcloud/html        → Nextcloud source, config, apps (/var/www/html)
-#   ../../data/nextcloud/data        → user files (/var/www/data, outside the webroot)
-#   ../../data/nextcloud/db          → MariaDB data files
-#   ../../data/nextcloud/euro-office → Euro-Office documentserver data/config/logs
-#
-# html/ carries no .gitkeep on purpose: the entrypoint rsyncs the release over
-# /var/www/html with --delete, which would remove the tracked file and leave the
-# server's clone permanently dirty. Docker creates the bind source on first up.
-#
-# Access (nginx reverse proxy on Tailscale hostname):
-#   https://lenovoflakes.tail62b305.ts.net:8444/  Nextcloud
-#   https://lenovoflakes.tail62b305.ts.net:8448/  Euro-Office Document Server
-#
-#   Nextcloud and Euro-Office listen on the homelab Docker network only (no host
-#   publish). nginx terminates TLS and proxies :8444 → nextcloud:80,
-#   :8448 → euro-office:80. db and redis stay on nextcloud-internal.
-#
-# Calendars / contacts (Apple Calendar, DAVx⁵, Thunderbird):
-#   https://lenovoflakes.tail62b305.ts.net:8444/remote.php/dav
-#   nginx serves the /.well-known/{caldav,carddav} redirects for auto-discovery.
-#
-# Euro-Office (Nextcloud Office) — after first boot is healthy:
-#   docker compose ps   # nextcloud should be healthy
-#   docker exec -u www-data nextcloud php occ status
-#   docker exec -u www-data nextcloud php occ app:install eurooffice
-#   docker exec -u www-data nextcloud php occ app:enable eurooffice
-#   Then Admin → Nextcloud Office → Server settings:
-#     Document Server URL: https://lenovoflakes.tail62b305.ts.net:8448
-#     Secret: same JWT_SECRET as in .env
-#
-# If occ fails with missing lib/versioncheck.php, or logs show
-# "Cannot create or write into the data directory", wipe the partial install
-# and recreate (hooks/pre-installation chowns /var/www/data for www-data):
-#   docker compose down
-#   sudo rm -rf ../../data/nextcloud/html/* ../../data/nextcloud/data/* ../../data/nextcloud/db/*
-#   docker compose up -d
-#
-# Start:
-#   cd src/nextcloud && docker compose up -d
-
+# src/nextcloud/docker-compose.yml
 services:
-  nextcloud:
-    # Track 34.x patches; a major bump needs `occ upgrade` and app compatibility checks.
-    image: nextcloud:34-apache
-    container_name: nextcloud
-    restart: unless-stopped
-    environment:
-      TZ: America/Los_Angeles
-      MYSQL_HOST: db
-      MYSQL_DATABASE: nextcloud
-      MYSQL_USER: ${MYSQL_USER:-nextcloud}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
-      # Redis backs distributed file locking; without it concurrent sync clients
-      # trip "file is locked" errors.
-      REDIS_HOST: redis
-      REDIS_HOST_PORT: 6379
-      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER:?Set NEXTCLOUD_ADMIN_USER in .env}
-      NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD:?Set NEXTCLOUD_ADMIN_PASSWORD in .env}
-      # Space-separated, applied at install time only. Matches on hostname (no
-      # port); "nextcloud" keeps in-network probes (Homepage siteMonitor,
-      # healthcheck) off the untrusted-domain error page.
-      NEXTCLOUD_TRUSTED_DOMAINS: lenovoflakes.tail62b305.ts.net nextcloud localhost
-      # Read at install time only; keeps user files out of the webroot.
-      NEXTCLOUD_DATA_DIR: /var/www/data
-      # Public host:port behind nginx — Nextcloud builds absolute links from these.
-      OVERWRITEHOST: lenovoflakes.tail62b305.ts.net:8444
-      OVERWRITEPROTOCOL: https
-      OVERWRITECLIURL: https://lenovoflakes.tail62b305.ts.net:8444
-      # nginx reaches us from the homelab bridge; trust it for X-Forwarded-*.
-      TRUSTED_PROXIES: 172.16.0.0/12
-      PHP_MEMORY_LIMIT: 1G
-      PHP_UPLOAD_LIMIT: 10G
-      # 0 disables Apache's LimitRequestBody so large library uploads are not cut off.
-      APACHE_BODY_LIMIT: 0
-    volumes:
-      - ../../data/nextcloud/html:/var/www/html
-      - ../../data/nextcloud/data:/var/www/data
-      # chown data dir before first install (see hooks/pre-installation/)
-      - ./hooks:/docker-entrypoint-hooks.d:ro
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost/status.php || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 120s
-    networks:
-      - homelab
-      - nextcloud-internal
-    labels:
-      - com.centurylinklabs.watchtower.enable=true
-
-  # Background jobs every 5 minutes. Nextcloud's AJAX cron only fires on page
-  # loads, which starves file scans and dav cleanup on an idle instance.
-  cron:
-    image: nextcloud:34-apache
-    container_name: nextcloud-cron
-    restart: unless-stopped
-    entrypoint: /cron.sh
-    environment:
-      TZ: America/Los_Angeles
-    volumes:
-      - ../../data/nextcloud/html:/var/www/html
-      - ../../data/nextcloud/data:/var/www/data
-    depends_on:
-      nextcloud:
-        # Wait until status.php answers — avoids racing the first-boot rsync
-        # that populates /var/www/html (partial trees break `occ`).
-        condition: service_healthy
-    networks:
-      - homelab
-      - nextcloud-internal
-    labels:
-      - com.centurylinklabs.watchtower.enable=true
-
-  # Euro-Office Document Server — Nextcloud Office backend (OnlyOffice fork).
-  # Browsers hit it via nginx :8448; Nextcloud connector shares JWT_SECRET.
-  euro-office:
-    image: ghcr.io/euro-office/documentserver:latest
-    container_name: euro-office
-    restart: unless-stopped
-    environment:
-      TZ: America/Los_Angeles
-      JWT_ENABLED: "true"
-      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
-      # Document server fetches files from Nextcloud on the Docker bridge;
-      # without this, private-IP requests are rejected.
-      ALLOW_PRIVATE_IP_ADDRESS: "true"
-    volumes:
-      - ../../data/nextcloud/euro-office/data:/var/lib/euro-office/documentserver
-      - ../../data/nextcloud/euro-office/private:/var/www/euro-office/Data
-      - ../../data/nextcloud/euro-office/logs:/var/log/euro-office/documentserver
-      - ../../data/nextcloud/euro-office/config:/etc/euro-office/documentserver
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost/healthcheck || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 120s
-    networks:
-      - homelab
-    labels:
-      - com.centurylinklabs.watchtower.enable=true
-
-  db:
-    image: mariadb:11.4
+  nextcloud-db:
+    image: postgres:16-alpine
     container_name: nextcloud-db
     restart: unless-stopped
-    # READ-COMMITTED + row-based binlog is the combination Nextcloud requires to
-    # avoid transaction deadlocks under concurrent sync.
-    command:
-      - --transaction-isolation=READ-COMMITTED
-      - --binlog-format=ROW
-      - --log-bin=binlog
     environment:
-      TZ: America/Los_Angeles
-      MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
-      MARIADB_DATABASE: nextcloud
-      MARIADB_USER: ${MYSQL_USER:-nextcloud}
-      MARIADB_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
-      MARIADB_AUTO_UPGRADE: "1"
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASSWORD}
     volumes:
-      - ../../data/nextcloud/db:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "/usr/local/bin/healthcheck.sh", "--connect", "--mariadbupgrade", "--innodb_initialized"]
-      interval: 20s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
+      - ../../data/nextcloud/db:/var/lib/postgresql/data
     networks:
       - nextcloud-internal
-    labels:
-      - com.centurylinklabs.watchtower.enable=true
 
-  redis:
-    image: redis:8-alpine
-    container_name: nextcloud-redis
+  nextcloud:
+    image: nextcloud:apache
+    container_name: nextcloud
     restart: unless-stopped
-    # Locking and cache only — nothing here needs to survive a restart.
-    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    depends_on:
+      - nextcloud-db
     environment:
-      TZ: America/Los_Angeles
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+      POSTGRES_HOST: nextcloud-db
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASSWORD}
+      NEXTCLOUD_TRUSTED_DOMAINS: ${NEXTCLOUD_DOMAIN}
+      OVERWRITEPROTOCOL: https
+    volumes:
+      - ../../data/nextcloud/app:/var/www/html
+      - ./hooks:/docker-entrypoint-hooks.d
     networks:
       - nextcloud-internal
-    labels:
-      - com.centurylinklabs.watchtower.enable=true
+      - homelab   # shared with nginx reverse proxy
+
+  collabora:
+    image: collabora/code:latest
+    container_name: collabora
+    restart: unless-stopped
+    environment:
+      - domain=${COLLABORA_DOMAIN}
+      - extra_params=--o:ssl.enable=false --o:ssl.termination.enable=true
+    cap_add:
+      - MKNOD
+    networks:
+      - homelab
 
 networks:
   homelab:
     external: true
-  nextcloud-internal:
-    name: nextcloud-internal
+    
