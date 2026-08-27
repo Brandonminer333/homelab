@@ -10,5 +10,5 @@
 | Torrenting | qbittorrent |
 | Git Sync | watchtower |
 | Password Manager | vaultwarden |
-| Document Editors | Euro-Office (via Nextcloud) |
+| Document Editors | Collabora (via Nextcloud) |
 | Dashboard | homepage |

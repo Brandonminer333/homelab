@@ -25,13 +25,13 @@
         server: local
         container: vaultwarden
 
-    - Euro-Office:
-        icon: onlyoffice.png
+    - Collabora:
+        icon: collabora.png
         href: https://lenovoflakes.tail62b305.ts.net:8448/
         description: Document editors (Nextcloud Office)
-        siteMonitor: http://euro-office/healthcheck
+        siteMonitor: http://collabora:9980/hosting/discovery
         server: local
-        container: euro-office
+        container: collabora
 
 - Network:
     - Pi-hole:

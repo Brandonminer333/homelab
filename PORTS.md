@@ -12,7 +12,7 @@ Hostname: `lenovoflakes.tail62b305.ts.net` (Tailscale MagicDNS).
 | 8444  | Nextcloud            | nginx → nextcloud | `https://lenovoflakes.tail62b305.ts.net:8444/` |
 | 8445  | Pi-hole admin        | nginx → pihole | `https://lenovoflakes.tail62b305.ts.net:8445/admin/` |
 | 8447  | Vaultwarden          | nginx → vaultwarden | `https://lenovoflakes.tail62b305.ts.net:8447/` |
-| 8448  | Euro-Office          | nginx → euro-office | `https://lenovoflakes.tail62b305.ts.net:8448/` |
+| 8448  | Collabora            | nginx → collabora | `https://lenovoflakes.tail62b305.ts.net:8448/` |
 | 2586  | ntfy                 | ntfy        | `http://lenovoflakes.tail62b305.ts.net:2586` |
 
 Nextcloud reuses Seafile's old `:8444`; the upstream-recommended `:8080` is already
@@ -34,9 +34,9 @@ taken by qBittorrent. CalDAV/CardDAV clients use
 | 80   | Nextcloud          | nextcloud   | nginx proxies `:8444` → `nextcloud:80` |
 | 80   | Pi-hole admin      | pihole      | nginx proxies `:8445` → `pihole` (`/admin`) |
 | 80   | Vaultwarden        | vaultwarden | nginx proxies `:8447` → `vaultwarden:80` |
-| 80   | Euro-Office        | nextcloud   | nginx proxies `:8448` → `euro-office:80` |
+| 9980 | Collabora          | nextcloud   | nginx proxies `:8448` → `collabora:9980` |
 | 3000 | Homepage           | homepage    | nginx proxies `:443` → `homepage:3000` |
-| 3306 | MariaDB            | nextcloud   | Nextcloud-only DB (`nextcloud-db`); hostname `db` on `nextcloud-internal` |
+| 5432 | Postgres           | nextcloud   | Nextcloud-only DB (`nextcloud-db`) on `nextcloud-internal` |
 | 6379 | Redis              | nextcloud   | file locking / cache (`nextcloud-redis`) on `nextcloud-internal` |
 | 8191 | FlareSolverr       | qbittorrent | Prowlarr reaches `http://127.0.0.1:8191` inside the VPN netns |
 
