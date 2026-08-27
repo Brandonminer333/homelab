@@ -38,7 +38,7 @@ services:
     container_name: collabora
     restart: unless-stopped
     environment:
-      - domain=${COLLABORA_DOMAIN}
+      - domain=${COLLABORA_ALLOWED_DOMAIN}
       - extra_params=--o:ssl.enable=false --o:ssl.termination.enable=true
     cap_add:
       - MKNOD
