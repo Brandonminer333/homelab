@@ -32,11 +32,21 @@
 #   https://lenovoflakes.tail62b305.ts.net:8444/remote.php/dav
 #   nginx serves the /.well-known/{caldav,carddav} redirects for auto-discovery.
 #
-# Euro-Office (Nextcloud Office) — after the first start:
+# Euro-Office (Nextcloud Office) — after first boot is healthy:
+#   docker compose ps   # nextcloud should be healthy
+#   docker exec -u www-data nextcloud php occ status
+#   docker exec -u www-data nextcloud php occ app:install eurooffice
 #   docker exec -u www-data nextcloud php occ app:enable eurooffice
 #   Then Admin → Nextcloud Office → Server settings:
 #     Document Server URL: https://lenovoflakes.tail62b305.ts.net:8448
 #     Secret: same JWT_SECRET as in .env
+#
+# If occ fails with missing lib/versioncheck.php, or logs show
+# "Cannot create or write into the data directory", wipe the partial install
+# and recreate (hooks/pre-installation chowns /var/www/data for www-data):
+#   docker compose down
+#   sudo rm -rf ../../data/nextcloud/html/* ../../data/nextcloud/data/* ../../data/nextcloud/db/*
+#   docker compose up -d
 #
 # Start:
 #   cd src/nextcloud && docker compose up -d
@@ -78,6 +88,8 @@ services:
     volumes:
       - ../../data/nextcloud/html:/var/www/html
       - ../../data/nextcloud/data:/var/www/data
+      # chown data dir before first install (see hooks/pre-installation/)
+      - ./hooks:/docker-entrypoint-hooks.d:ro
     depends_on:
       db:
         condition: service_healthy
@@ -109,7 +121,9 @@ services:
       - ../../data/nextcloud/data:/var/www/data
     depends_on:
       nextcloud:
-        condition: service_started
+        # Wait until status.php answers — avoids racing the first-boot rsync
+        # that populates /var/www/html (partial trees break `occ`).
+        condition: service_healthy
     networks:
       - homelab
       - nextcloud-internal
