@@ -46,6 +46,8 @@ services:
       - homelab
 
 networks:
+  nextcloud-internal:
+    external: false
   homelab:
     external: true
     
