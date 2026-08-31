@@ -7,8 +7,9 @@
 # Mount points:
 #   ./config                        → Jellyfin settings, database, metadata (read-write)
 #   ./cache                         → transcode and image cache (read-write)
-#   ../../data/jellyfin/media/music → music library (read-only)  → /media/music
 #   ../../data/jellyfin/media/videos → video library (read-only) → /media/videos
+#
+#   Video only — music lives in the navidrome stack (../../data/navidrome/music).
 #
 # Access (nginx reverse proxy on Tailscale hostname):
 #   https://lenovoflakes.tail62b305.ts.net:8443/
@@ -37,7 +38,6 @@ services:
     volumes:
       - ./config:/config
       - ./cache:/cache
-      - ../../data/jellyfin/media/music:/media/music:ro
       - ../../data/jellyfin/media/videos:/media/videos:ro
     networks:
       - homelab

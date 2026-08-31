@@ -1,24 +1,25 @@
-# Navidrome — Subsonic-compatible music server over the shared music library.
+# Navidrome — Subsonic-compatible music server with its own music library.
 #
 # Fill in before first `docker compose up`:
 #   1. cp .env.example .env   # PUID / PGID from `id -u` / `id -g` on the host
-#   2. Create the data folder owned by that same user:
-#        mkdir -p ../../data/navidrome
+#   2. Make sure both bind-mount sources exist and are owned by that user:
+#        mkdir -p ../../data/navidrome/metadata ../../data/navidrome/music
 #        sudo chown -R "$(id -u):$(id -g)" ../../data/navidrome
-#      Skipping this is the usual cause of a restart loop: Docker creates a
-#      missing bind-mount source as root, Navidrome runs as PUID, cannot create
-#      navidrome.db, and SQLite reports "unable to open database file".
+#      Both are kept in git via .gitkeep, so a pull normally creates them. Any
+#      path Docker has to create itself lands as root, Navidrome runs as PUID,
+#      cannot create navidrome.db, and SQLite reports "unable to open database
+#      file" in a restart loop. Re-run the chown after changing these paths.
 #
 # Mount points:
-#   ../../data/navidrome              → DB, cache, transcoded artwork (read-write)
-#   ../../data/jellyfin/media/music   → music library (read-only) → /music
+#   ../../data/navidrome/metadata → DB, cache, transcoded artwork (read-write)
+#   ../../data/navidrome/music    → music library (read-only) → /music
 #
 #   Navidrome embeds SQLite — the DB is a file in /data, so there is no separate
 #   database container (unlike the nextcloud stack).
 #
-#   The library is the same tree Jellyfin serves; Navidrome only ever reads it,
-#   so both stacks can run at once. Tags live in the files — Navidrome writes
-#   play counts, stars and playlists to its own DB, never to the media.
+#   This library is Navidrome's own, separate from the Jellyfin media tree.
+#   The mount is read-only: tags live in the files, while play counts, stars and
+#   playlists go to Navidrome's DB, never back to the media.
 #
 # Access (nginx reverse proxy on Tailscale hostname):
 #   https://lenovoflakes.tail62b305.ts.net:8446/
