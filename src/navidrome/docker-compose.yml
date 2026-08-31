@@ -45,8 +45,10 @@ services:
       TZ: America/Los_Angeles
       ND_MUSICFOLDER: /music
       ND_DATAFOLDER: /data
-      # Full rescan schedule; new files are picked up immediately by the watcher.
-      ND_SCANSCHEDULE: 24h
+      # Full rescan schedule (renamed from ND_SCANSCHEDULE in v0.55.0 — the old
+      # name is ignored and silently disables periodic scans).
+      # New files are picked up sooner than this by the filesystem watcher.
+      ND_SCANNER_SCHEDULE: 24h
       ND_LOGLEVEL: info
       ND_SESSIONTIMEOUT: 24h
       # Transcoding profiles are editable in the UI only when this is true;
