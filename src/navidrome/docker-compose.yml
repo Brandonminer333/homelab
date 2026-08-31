@@ -59,8 +59,8 @@ services:
       # unless a Last.fm / Spotify key is added here.
       ND_COVERARTPRIORITY: cover.*, folder.*, front.*, embedded
     volumes:
-      - ../../data/navidrome:/data
-      - ../../data/jellyfin/media/music:/music:ro
+      - ../../data/navidrome/metadata:/data
+      - ../../data/navidrome/music:/music:ro
     networks:
       - homelab
     labels:
