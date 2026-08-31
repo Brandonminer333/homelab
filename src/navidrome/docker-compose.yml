@@ -1,0 +1,62 @@
+# Navidrome — Subsonic-compatible music server over the shared music library.
+#
+# Fill in before first `docker compose up`:
+#   1. PUID / PGID — run `id -u` and `id -g` on the host for the user that owns
+#      ../../data/navidrome and the music library (defaults to 1000:1000)
+#   2. mkdir -p ../../data/navidrome   # DB, cache, artwork
+#
+# Mount points:
+#   ../../data/navidrome              → DB, cache, transcoded artwork (read-write)
+#   ../../data/jellyfin/media/music   → music library (read-only) → /music
+#
+#   The library is the same tree Jellyfin serves; Navidrome only ever reads it,
+#   so both stacks can run at once. Tags live in the files — Navidrome writes
+#   play counts, stars and playlists to its own DB, never to the media.
+#
+# Access (nginx reverse proxy on Tailscale hostname):
+#   https://lenovoflakes.tail62b305.ts.net:8446/
+#
+#   Navidrome listens on the homelab Docker network only (no host publish).
+#   nginx terminates TLS and proxies :8446 → navidrome:4533.
+#   ND_BASEURL stays empty (served at root); set it only if this ever moves to
+#   a subpath behind :443.
+#
+# Clients (Subsonic / OpenSubsonic apps — Symfonium, substreamer, play:Sub):
+#   Server: https://lenovoflakes.tail62b305.ts.net:8446
+#   The first account created via the web UI is the admin.
+#
+# Start:
+#   cd src/navidrome && docker compose up -d
+
+services:
+  navidrome:
+    image: deluan/navidrome:0.63.2
+    container_name: navidrome
+    restart: unless-stopped
+    user: "${PUID:-1000}:${PGID:-1000}"
+    environment:
+      TZ: America/Los_Angeles
+      ND_MUSICFOLDER: /music
+      ND_DATAFOLDER: /data
+      # Full rescan schedule; new files are picked up immediately by the watcher.
+      ND_SCANSCHEDULE: 24h
+      ND_LOGLEVEL: info
+      ND_SESSIONTIMEOUT: 24h
+      # Transcoding profiles are editable in the UI only when this is true;
+      # false keeps the defaults (and the config surface) locked down.
+      ND_ENABLETRANSCODINGCONFIG: "false"
+      ND_ENABLESHARING: "false"
+      # Cover art and artist images from the filesystem; no external lookups
+      # unless a Last.fm / Spotify key is added here.
+      ND_COVERARTPRIORITY: cover.*, folder.*, front.*, embedded
+    volumes:
+      - ../../data/navidrome:/data
+      - ../../data/jellyfin/media/music:/music:ro
+    networks:
+      - homelab
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+
+networks:
+  homelab:
+    external: true

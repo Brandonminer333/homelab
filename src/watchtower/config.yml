@@ -5,6 +5,9 @@ containers:
   jellyfin:
     priority: 1
     runs: false
+  navidrome:
+    priority: 1
+    runs: true
   nginx:
     priority: 0
     runs: true

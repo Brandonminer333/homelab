@@ -11,6 +11,7 @@ Hostname: `lenovoflakes.tail62b305.ts.net` (Tailscale MagicDNS).
 | 8443  | Jellyfin             | nginx → jellyfin | `https://lenovoflakes.tail62b305.ts.net:8443/` |
 | 8444  | Nextcloud            | nginx → nextcloud | `https://lenovoflakes.tail62b305.ts.net:8444/` |
 | 8445  | Pi-hole admin        | nginx → pihole | `https://lenovoflakes.tail62b305.ts.net:8445/admin/` |
+| 8446  | Navidrome            | nginx → navidrome | `https://lenovoflakes.tail62b305.ts.net:8446/` |
 | 8447  | Vaultwarden          | nginx → vaultwarden | `https://lenovoflakes.tail62b305.ts.net:8447/` |
 | 8448  | Collabora            | nginx → collabora | `https://lenovoflakes.tail62b305.ts.net:8448/` |
 | 2586  | ntfy                 | ntfy        | `http://lenovoflakes.tail62b305.ts.net:2586` |
@@ -31,6 +32,7 @@ taken by qBittorrent. CalDAV/CardDAV clients use
 | Port | Service            | Stack       | Notes |
 |------|--------------------|-------------|-------|
 | 8096 | Jellyfin           | jellyfin    | nginx proxies `:8443` → `jellyfin:8096` |
+| 4533 | Navidrome          | navidrome   | nginx proxies `:8446` → `navidrome:4533` |
 | 80   | Nextcloud          | nextcloud   | nginx proxies `:8444` → `nextcloud:80` |
 | 80   | Pi-hole admin      | pihole      | nginx proxies `:8445` → `pihole` (`/admin`) |
 | 80   | Vaultwarden        | vaultwarden | nginx proxies `:8447` → `vaultwarden:80` |

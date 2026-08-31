@@ -4,6 +4,7 @@
 
 | Service | Software |
 | Media Server | jellyfin |
+| Music Server | Navidrome |
 | File Drive / Calendar / Contacts | Nextcloud |
 | Notification Server | nfty |
 | DNS | pihole

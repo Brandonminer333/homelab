@@ -8,6 +8,14 @@
         server: local
         container: jellyfin
 
+    - Navidrome:
+        icon: navidrome.png
+        href: https://lenovoflakes.tail62b305.ts.net:8446/
+        description: Music server
+        siteMonitor: http://navidrome:4533/ping
+        server: local
+        container: navidrome
+
 - Cloud:
     - Nextcloud:
         icon: nextcloud.png
