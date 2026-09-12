@@ -13,4 +13,3 @@
 | Password Manager | vaultwarden |
 | Document Editors | Collabora (via Nextcloud) |
 | Dashboard | homepage |
-| Grocery / Recipes | KitchenOwl |

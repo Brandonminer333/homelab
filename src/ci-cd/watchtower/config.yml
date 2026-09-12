@@ -3,6 +3,10 @@ containers:
     priority: 1
     runs: true
     path: src/homepage
+  kitchenowl:
+    priority: 1
+    runs: false
+    path: src/kitchenowl
   jellyfin:
     priority: 1
     runs: false
