@@ -6,7 +6,7 @@
 #   Image-update notifications go to ntfy topic `homelab` on the homelab network.
 #
 # git-sync: polls origin, fast-forward pulls on new commits, then syncs every
-#   other stack to src/watchtower/config.yml: (1) stop runs:false, (2) start
+#   other stack to src/ci-cd/watchtower/config.yml: (1) stop runs:false, (2) start
 #   or force-recreate runs:true. Higher priority first on up; reverse on down;
 #   depends-on enforced. Per-stack compose failures ntfy and continue. Script
 #   is read from the bind mount. This stack is never torn down by itself.
@@ -15,15 +15,15 @@
 #   cp .env.example .env   # set HOMELAB_PATH to the host clone path
 #   # Private HTTPS remotes: ensure the host clone can already fetch, or mount
 #   # SSH keys (uncomment volumes below).
-#   # Bring up src/ntfy first so notifications have somewhere to go.
+#   # Bring up src/ci-cd/ntfy first so notifications have somewhere to go.
 #
 # Start:
-#   cd src/watchtower && docker compose up -d --build
+#   cd src/ci-cd/watchtower && docker compose up -d --build
 #
 # Deploy progress (runs bind-mounted script; no rebuild needed):
-#   docker exec git-sync /bin/sh /homelab/src/watchtower/git-sync.sh status
-#   docker exec git-sync /bin/sh /homelab/src/watchtower/git-sync.sh plan
-#   docker exec git-sync /bin/sh /homelab/src/watchtower/git-sync.sh sync
+#   docker exec git-sync /bin/sh /homelab/src/ci-cd/watchtower/git-sync.sh status
+#   docker exec git-sync /bin/sh /homelab/src/ci-cd/watchtower/git-sync.sh plan
+#   docker exec git-sync /bin/sh /homelab/src/ci-cd/watchtower/git-sync.sh sync
 
 services:
   watchtower:
@@ -59,7 +59,7 @@ services:
       HOST_REPO_DIR: ${HOMELAB_PATH:?set HOMELAB_PATH in .env}
       GIT_BRANCH: ${GIT_BRANCH:-main}
       POLL_INTERVAL: ${POLL_INTERVAL:-300}
-      # Stack enable/disable: src/watchtower/config.yml only (public, in-repo).
+      # Stack enable/disable: src/ci-cd/watchtower/config.yml only (public, in-repo).
       # Internal publish URL (container name on the homelab network).
       NTFY_URL: ${NTFY_URL:-http://ntfy/homelab}
     volumes:

@@ -5,11 +5,11 @@
 #   2. Image tag — check https://github.com/jellyfin/jellyfin/releases for the current stable version
 #
 # Mount points:
-#   ./config                        → Jellyfin settings, database, metadata (read-write)
-#   ./cache                         → transcode and image cache (read-write)
-#   ../../data/jellyfin/media/videos → video library (read-only) → /media/videos
+#   ./config                               → Jellyfin settings, database, metadata (read-write)
+#   ./cache                                → transcode and image cache (read-write)
+#   ../../../data/media/jellyfin/media/videos → video library (read-only) → /media/videos
 #
-#   Video only — music lives in the navidrome stack (../../data/navidrome/music).
+#   Video only — music lives in the navidrome stack (../../../data/media/navidrome/music).
 #
 # Access (nginx reverse proxy on Tailscale hostname):
 #   https://lenovoflakes.tail62b305.ts.net:8443/
@@ -38,7 +38,7 @@ services:
     volumes:
       - ./config:/config
       - ./cache:/cache
-      - ../../data/jellyfin/media/videos:/media/videos:ro
+      - ../../../data/media/jellyfin/media/videos:/media/videos:ro
     networks:
       - homelab
     # Intel QuickSync hardware transcoding (optional):

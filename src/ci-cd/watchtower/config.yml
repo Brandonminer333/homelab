@@ -2,30 +2,39 @@ containers:
   homepage:
     priority: 1
     runs: true
+    path: src/homepage
   jellyfin:
     priority: 1
     runs: false
+    path: src/media/jellyfin
   navidrome:
     priority: 1
     runs: true
+    path: src/media/navidrome
   nginx:
     priority: 0
     runs: true
+    path: src/network/nginx
   ntfy:
     priority: 2
     runs: true
+    path: src/ci-cd/ntfy
   nextcloud:
     priority: 1
     runs: true
+    path: src/nextcloud
   pihole:
     priority: 1
     runs: true
+    path: src/network/pihole
   qbittorrent:
     priority: 1
     runs: false
+    path: src/qbittorrent
   vaultwarden:
     priority: 1
     runs: true
+    path: src/vaultwarden
   vscode:
     priority: 1
     runs: false
@@ -33,3 +42,4 @@ containers:
     priority: 2
     runs: true
     depends-on: [ntfy]
+    path: src/ci-cd/watchtower

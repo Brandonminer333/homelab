@@ -9,7 +9,7 @@
 #   curl -d "hello" http://ntfy/homelab
 #
 # Start:
-#   cd src/ntfy && docker compose up -d
+#   cd src/ci-cd/ntfy && docker compose up -d
 
 services:
   ntfy:

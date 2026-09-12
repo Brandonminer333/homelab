@@ -3,16 +3,16 @@
 # Fill in before first `docker compose up`:
 #   1. cp .env.example .env   # PUID / PGID from `id -u` / `id -g` on the host
 #   2. Make sure both bind-mount sources exist and are owned by that user:
-#        mkdir -p ../../data/navidrome/metadata ../../data/navidrome/music
-#        sudo chown -R "$(id -u):$(id -g)" ../../data/navidrome
+#        mkdir -p ../../../data/media/navidrome/metadata ../../../data/media/navidrome/music
+#        sudo chown -R "$(id -u):$(id -g)" ../../../data/media/navidrome
 #      Both are kept in git via .gitkeep, so a pull normally creates them. Any
 #      path Docker has to create itself lands as root, Navidrome runs as PUID,
 #      cannot create navidrome.db, and SQLite reports "unable to open database
 #      file" in a restart loop. Re-run the chown after changing these paths.
 #
 # Mount points:
-#   ../../data/navidrome/metadata → DB, cache, transcoded artwork (read-write)
-#   ../../data/navidrome/music    → music library (read-only) → /music
+#   ../../../data/media/navidrome/metadata → DB, cache, transcoded artwork (read-write)
+#   ../../../data/media/navidrome/music    → music library (read-only) → /music
 #
 #   Navidrome embeds SQLite — the DB is a file in /data, so there is no separate
 #   database container (unlike the nextcloud stack).
@@ -34,7 +34,7 @@
 #   The first account created via the web UI is the admin.
 #
 # Start:
-#   cd src/navidrome && docker compose up -d
+#   cd src/media/navidrome && docker compose up -d
 
 services:
   navidrome:
@@ -60,8 +60,8 @@ services:
       # unless a Last.fm / Spotify key is added here.
       ND_COVERARTPRIORITY: cover.*, folder.*, front.*, embedded
     volumes:
-      - ../../data/navidrome/metadata:/data
-      - ../../data/navidrome/music:/music:ro
+      - ../../../data/media/navidrome/metadata:/data
+      - ../../../data/media/navidrome/music:/music:ro
     networks:
       - homelab
     labels:

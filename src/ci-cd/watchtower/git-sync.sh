@@ -1,6 +1,6 @@
 #!/bin/sh
 # Poll origin for new commits; on change, git pull and sync compose stacks to
-# src/watchtower/config.yml (start / stop / apply compose changes). Never tear
+# src/ci-cd/watchtower/config.yml (start / stop / apply compose changes). Never tear
 # down this watchtower stack mid-deploy.
 #
 # Sync phases:
@@ -20,7 +20,7 @@ HOST_REPO_DIR="${HOST_REPO_DIR:-$REPO_DIR}"
 BRANCH="${GIT_BRANCH:-main}"
 INTERVAL="${POLL_INTERVAL:-300}"
 # Desired stack state is always the public YAML in-repo (not .env).
-CONFIG_FILE="${REPO_DIR}/src/watchtower/config.yml"
+CONFIG_FILE="${REPO_DIR}/src/ci-cd/watchtower/config.yml"
 STATUS_FILE="${REPO_DIR}/.git-sync-status"
 NTFY_URL="${NTFY_URL:-http://ntfy/homelab}"
 
@@ -61,6 +61,7 @@ stack_dir() {
     echo "$path"
     return
   fi
+  # Fallback only. Moved stacks set path in config.yml (src/media, src/network, src/ci-cd).
   echo "src/${name}"
 }
 
@@ -676,10 +677,10 @@ while true; do
   if [ "$LOCAL" != "$REMOTE" ]; then
     log "Update detected: ${LOCAL} -> ${REMOTE}"
     if git merge --ff-only "origin/${BRANCH}"; then
-      if [ -f "${REPO_DIR}/src/watchtower/git-sync.sh" ]; then
+      if [ -f "${REPO_DIR}/src/ci-cd/watchtower/git-sync.sh" ]; then
         sync_from_config || log "WARN: sync_from_config returned non-zero"
       else
-        log "ERROR: ${REPO_DIR}/src/watchtower/git-sync.sh missing after pull"
+        log "ERROR: ${REPO_DIR}/src/ci-cd/watchtower/git-sync.sh missing after pull"
         notify "Homelab deploy failed" "git-sync.sh missing after pull" high
       fi
     else
