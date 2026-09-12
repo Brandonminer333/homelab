@@ -41,6 +41,15 @@
         server: local
         container: collabora
 
+- Home:
+    - KitchenOwl:
+        icon: kitchenowl.png
+        href: https://lenovoflakes.tail62b305.ts.net:8449/
+        description: Groceries, recipes & meal plans
+        siteMonitor: http://kitchenowl:8080/
+        server: local
+        container: kitchenowl
+
 - Network:
     - Pi-hole:
         icon: pi-hole.png

@@ -1,0 +1,45 @@
+# KitchenOwl — shared grocery lists, recipes, and meal planning.
+#
+# Fill in before first `docker compose up`:
+#   1. cp .env.example .env
+#   2. Set JWT_SECRET_KEY (see .env.example)
+#   3. Leave OPEN_REGISTRATION=true until you create your account, then set false
+#
+# Layout:
+#   ../../data/kitchenowl/data → SQLite DB and uploads (read-write)
+#
+# Access (nginx reverse proxy on Tailscale hostname):
+#   https://lenovoflakes.tail62b305.ts.net:8449/
+#
+#   KitchenOwl listens on the homelab Docker network only (no host publish).
+#   nginx terminates TLS and proxies :8449 → kitchenowl:8080.
+#
+# Clients (KitchenOwl mobile / web):
+#   Server URL: https://lenovoflakes.tail62b305.ts.net:8449
+#   The first account created via the web UI is the household admin.
+#
+# Start:
+#   cd src/kitchenowl && docker compose up -d
+
+services:
+  kitchenowl:
+    image: tombursch/kitchenowl:latest
+    container_name: kitchenowl
+    restart: unless-stopped
+    environment:
+      TZ: America/Los_Angeles
+      # Must match the public HTTPS URL (CORS / mobile app connectivity).
+      FRONT_URL: https://lenovoflakes.tail62b305.ts.net:8449
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in .env}
+      # true for first account; set false in .env after signup and recreate.
+      OPEN_REGISTRATION: ${OPEN_REGISTRATION:-true}
+    volumes:
+      - ../../data/kitchenowl/data:/data
+    networks:
+      - homelab
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+
+networks:
+  homelab:
+    external: true
