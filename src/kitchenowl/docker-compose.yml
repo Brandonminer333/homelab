@@ -21,9 +21,13 @@
 # Start:
 #   cd src/kitchenowl && docker compose up -d
 
+# Image is pinned: v0.7.5+ (Python 3.14, currently `latest`) SIGILLs in
+# `flask db upgrade` on this host ("Illegal instruction (core dumped)").
+# v0.7.4 is the last release built on Python 3.12. Do not bump to latest
+# until the image no longer requires instructions this CPU lacks.
 services:
   kitchenowl:
-    image: tombursch/kitchenowl:latest
+    image: tombursch/kitchenowl:v0.7.4
     container_name: kitchenowl
     restart: unless-stopped
     environment:

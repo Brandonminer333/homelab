@@ -14,6 +14,7 @@ Hostname: `lenovoflakes.tail62b305.ts.net` (Tailscale MagicDNS).
 | 8446  | Navidrome            | nginx → navidrome | `https://lenovoflakes.tail62b305.ts.net:8446/` |
 | 8447  | Vaultwarden          | nginx → vaultwarden | `https://lenovoflakes.tail62b305.ts.net:8447/` |
 | 8448  | Collabora            | nginx → collabora | `https://lenovoflakes.tail62b305.ts.net:8448/` |
+| 8449  | KitchenOwl           | nginx → kitchenowl | `https://lenovoflakes.tail62b305.ts.net:8449/` |
 | 2586  | ntfy                 | ntfy        | `http://lenovoflakes.tail62b305.ts.net:2586` |
 
 Nextcloud reuses Seafile's old `:8444`; the upstream-recommended `:8080` is already
