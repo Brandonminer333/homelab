@@ -10,7 +10,7 @@
 #   $DATA_ROOT/jellyfin/cache  → transcode and image cache (read-write)
 #   $MEDIA_ROOT/videos         → video library (read-only) → /media/videos
 #
-#   Video only — music lives in the navidrome stack ($MEDIA_ROOT/music).
+#   Video only — music lives in the navidrome stack ($MUSIC_ROOT).
 #
 # Access (nginx reverse proxy on Tailscale hostname):
 #   https://lenovoflakes.tail62b305.ts.net:8443/

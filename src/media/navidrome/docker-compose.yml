@@ -9,16 +9,19 @@
 #      database file" in a restart loop. Re-run that script after changing any
 #      path in storage.env.
 #
-# Mount points (DATA_ROOT / MEDIA_ROOT come from storage.env at the repo root):
+# Mount points (DATA_ROOT / MUSIC_ROOT come from storage.env at the repo root):
 #   $DATA_ROOT/navidrome/metadata → DB, cache, transcoded artwork (read-write)
-#   $MEDIA_ROOT/music             → music library (read-only) → /music
+#   $MUSIC_ROOT                   → music library (read-only) → /music
 #
 #   Navidrome embeds SQLite — the DB is a file in /data, so there is no separate
 #   database container (unlike the nextcloud stack).
 #
-#   This library is Navidrome's own, separate from the Jellyfin media tree.
+#   MUSIC_ROOT is the qBittorrent download directory: finished torrents are all
+#   music, so they appear here with no copy step. The filesystem watcher picks
+#   them up within seconds; ND_SCANNER_SCHEDULE is only the full-rescan backstop.
 #   The mount is read-only: tags live in the files, while play counts, stars and
-#   playlists go to Navidrome's DB, never back to the media.
+#   playlists go to Navidrome's DB, never back to the media. qBittorrent keeps
+#   seeding the same files, so never delete from inside Navidrome.
 #
 # Access (nginx reverse proxy on Tailscale hostname):
 #   https://lenovoflakes.tail62b305.ts.net:8446/
@@ -61,7 +64,7 @@ services:
       ND_COVERARTPRIORITY: cover.*, folder.*, front.*, embedded
     volumes:
       - ${DATA_ROOT:?Set DATA_ROOT in storage.env}/navidrome/metadata:/data
-      - ${MEDIA_ROOT:?Set MEDIA_ROOT in storage.env}/music:/music:ro
+      - ${MUSIC_ROOT:?Set MUSIC_ROOT in storage.env}:/music:ro
     networks:
       - homelab
     labels:

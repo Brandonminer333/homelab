@@ -21,6 +21,12 @@ Confirm: `docker logs gluetun 2>&1 | grep -i "port forward"`
 
 Torrent files persist under `$DATA_ROOT/qbittorrent/downloads` (`/downloads` in the container),
 where `DATA_ROOT` comes from `storage.env` at the repo root.
+
+Navidrome mounts that same directory read-only as its music library (`MUSIC_ROOT`), so
+completed torrents show up in Navidrome automatically. Keep seeding in mind: do not move,
+rename, or delete completed files, and if you split the save path into
+`/downloads/completed` + `/downloads/incomplete`, point `MUSIC_ROOT` at the `completed`
+subdirectory so Navidrome never scans partial files.
 In qBittorrent, keep default save path as `/downloads` (or `/downloads/completed` + incomplete `/downloads/incomplete`).
 
 ## Prowlarr links (same VPN network namespace → use localhost)

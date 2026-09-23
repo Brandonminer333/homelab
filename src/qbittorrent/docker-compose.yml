@@ -19,6 +19,10 @@
 #   $DATA_ROOT/gluetun               → Gluetun state (read-write)
 #   $DATA_ROOT/qbittorrent/downloads → all torrent I/O (mounted as /downloads)
 #
+#   Navidrome serves that download directory read-only as its music library
+#   (MUSIC_ROOT in storage.env), so finished torrents appear there with no copy
+#   step. Moving or renaming completed files will break seeding.
+#
 # Access (localhost + SSH forward — not on homelab network, not through Tailscale):
 #   qBittorrent WebUI → 127.0.0.1:8080
 #   Prowlarr WebUI    → 127.0.0.1:9696

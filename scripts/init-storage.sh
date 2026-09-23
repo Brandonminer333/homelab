@@ -26,6 +26,7 @@ fi
 
 : "${DATA_ROOT:?Set DATA_ROOT in storage.env}"
 : "${MEDIA_ROOT:?Set MEDIA_ROOT in storage.env}"
+: "${MUSIC_ROOT:?Set MUSIC_ROOT in storage.env}"
 
 # PUID/PGID from the environment, else the user behind sudo, else the caller.
 # Must match the PUID/PGID in src/media/*/.env and src/qbittorrent/.env.
@@ -72,10 +73,11 @@ for rel in $user_owned; do
   chown "${uid}:${gid}" "${DATA_ROOT}/${rel}"
 done
 
-# MEDIA_ROOT may point at a different disk than DATA_ROOT.
-for rel in videos music; do
-  mkdir -p "${MEDIA_ROOT}/${rel}"
-  chown "${uid}:${gid}" "${MEDIA_ROOT}/${rel}"
-done
+# MEDIA_ROOT and MUSIC_ROOT may point at a different disk than DATA_ROOT.
+# MUSIC_ROOT defaults to qbittorrent/downloads above, so this is usually a no-op.
+mkdir -p "${MEDIA_ROOT}/videos" "$MUSIC_ROOT"
+chown "${uid}:${gid}" "${MEDIA_ROOT}/videos" "$MUSIC_ROOT"
 
-echo "storage ready: DATA_ROOT=${DATA_ROOT} MEDIA_ROOT=${MEDIA_ROOT} owner=${uid}:${gid}"
+echo "storage ready: DATA_ROOT=${DATA_ROOT} owner=${uid}:${gid}"
+echo "  video: ${MEDIA_ROOT}/videos"
+echo "  music: ${MUSIC_ROOT}"

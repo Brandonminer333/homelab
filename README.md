@@ -22,7 +22,12 @@ declared once in [`storage.env`](storage.env):
 | Variable | Default | Holds |
 | --- | --- | --- |
 | `DATA_ROOT` | `/mnt/homelab-data` | databases, service config, downloads |
-| `MEDIA_ROOT` | `/mnt/homelab-data/media` | video and music libraries (mounted read-only) |
+| `MEDIA_ROOT` | `$DATA_ROOT/media` | Jellyfin video library, in `videos/` (read-only) |
+| `MUSIC_ROOT` | `$DATA_ROOT/qbittorrent/downloads` | Navidrome music library (read-only) |
+
+`MUSIC_ROOT` points at the qBittorrent download directory, so finished torrents
+become playable in Navidrome with no copy step. Point it at `$MEDIA_ROOT/music`
+instead if you ever want a curated library separate from what is seeding.
 
 Every compose file references `${DATA_ROOT}` / `${MEDIA_ROOT}` instead of a
 relative path, so moving to a different disk is a one-line edit followed by an
