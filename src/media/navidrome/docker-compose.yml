@@ -33,7 +33,8 @@
 #   The first account created via the web UI is the admin.
 #
 # Start:
-#   cd src/media/navidrome && docker compose --env-file ../../../storage.env --env-file .env up -d
+#   ./scripts/compose.sh src/media/navidrome up -d
+#   (the wrapper adds storage.env; plain `docker compose` cannot resolve DATA_ROOT)
 
 services:
   navidrome:

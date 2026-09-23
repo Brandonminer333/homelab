@@ -22,7 +22,8 @@
 #   The first account created via the web UI is the household admin.
 #
 # Start (only after nginx is wired back up):
-#   cd src/kitchenowl && docker compose --env-file ../../storage.env --env-file .env up -d
+#   ./scripts/compose.sh src/kitchenowl up -d
+#   (the wrapper adds storage.env; plain `docker compose` cannot resolve DATA_ROOT)
 
 # Image is pinned: v0.7.5+ (Python 3.14, currently `latest`) SIGILLs in
 # `flask db upgrade` on this host ("Illegal instruction (core dumped)").

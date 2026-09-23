@@ -8,7 +8,8 @@
 #   $DATA_ROOT/pihole/etc-dnsmasq.d → extra dnsmasq config
 #
 # Start:
-#   cd src/network/pihole && docker compose --env-file ../../../storage.env --env-file .env up -d
+#   ./scripts/compose.sh src/network/pihole up -d
+#   (the wrapper adds storage.env; plain `docker compose` cannot resolve DATA_ROOT)
 
 services:
   pihole:

@@ -12,7 +12,8 @@
 #   $DATA_ROOT/ntfy/cache → message cache and attachments
 #
 # Start:
-#   cd src/ci-cd/ntfy && docker compose --env-file ../../../storage.env up -d
+#   ./scripts/compose.sh src/ci-cd/ntfy up -d
+#   (the wrapper adds storage.env; plain `docker compose` cannot resolve DATA_ROOT)
 
 services:
   ntfy:

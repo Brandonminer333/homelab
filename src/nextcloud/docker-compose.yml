@@ -35,7 +35,8 @@
 #   (WOPI callbacks cannot use the Docker-internal name).
 #
 # Start:
-#   cd src/nextcloud && docker compose --env-file ../../storage.env --env-file .env up -d
+#   ./scripts/compose.sh src/nextcloud up -d
+#   (the wrapper adds storage.env; plain `docker compose` cannot resolve DATA_ROOT)
 
 services:
   nextcloud:

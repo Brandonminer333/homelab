@@ -36,10 +36,21 @@ that run as `PUID:PGID`:
 sudo ./scripts/init-storage.sh
 ```
 
-`git-sync` passes `storage.env` to every stack automatically. Running compose by
-hand needs it as an extra `--env-file`; the `Start:` comment at the top of each
-compose file has the exact command, for example:
+`git-sync` passes `storage.env` to every stack automatically. A bare
+`docker compose up -d` does not, and fails with `required variable DATA_ROOT is
+missing a value`. Use the wrapper instead — it adds the `--env-file` flags and
+nothing else, so every compose subcommand works as usual:
 
 ```sh
-cd src/nextcloud && docker compose --env-file ../../storage.env --env-file .env up -d
+./scripts/compose.sh src/qbittorrent up -d
+./scripts/compose.sh src/nextcloud logs -f
 ```
+
+It also works from inside a stack directory, where the path can be omitted:
+
+```sh
+cd src/qbittorrent && ../../scripts/compose.sh up -d
+```
+
+The equivalent raw command, if you would rather not use the wrapper, is
+`docker compose --env-file <repo>/storage.env --env-file .env up -d`.

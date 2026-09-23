@@ -24,7 +24,8 @@
 #   exposure. Tailnet access is via MagicDNS + nginx.
 #
 # Start:
-#   cd src/media/jellyfin && docker compose --env-file ../../../storage.env up -d
+#   ./scripts/compose.sh src/media/jellyfin up -d
+#   (the wrapper adds storage.env; plain `docker compose` cannot resolve DATA_ROOT)
 
 services:
   jellyfin:

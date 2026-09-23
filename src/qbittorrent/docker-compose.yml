@@ -39,7 +39,8 @@
 #   Tag indexers that need Cloudflare bypass with that proxy tag.
 #
 # Start:
-#   cd src/qbittorrent && docker compose --env-file ../../storage.env --env-file .env up -d
+#   ./scripts/compose.sh src/qbittorrent up -d
+#   (the wrapper adds storage.env; plain `docker compose` cannot resolve DATA_ROOT)
 
 services:
   gluetun:

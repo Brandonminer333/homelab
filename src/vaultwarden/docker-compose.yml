@@ -22,7 +22,8 @@
 #   https://lenovoflakes.tail62b305.ts.net:8447/admin
 #
 # Start:
-#   cd src/vaultwarden && docker compose --env-file ../../storage.env --env-file .env up -d
+#   ./scripts/compose.sh src/vaultwarden up -d
+#   (the wrapper adds storage.env; plain `docker compose` cannot resolve DATA_ROOT)
 
 services:
   vaultwarden:
