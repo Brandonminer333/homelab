@@ -2,6 +2,13 @@
 #
 # Admin UI (via nginx): https://lenovoflakes.tail62b305.ts.net:8445/admin/
 # DNS (port 53) is not proxied; publish it on the host if this box is your resolver.
+#
+# Layout (DATA_ROOT comes from storage.env at the repo root):
+#   $DATA_ROOT/pihole/etc-pihole    → blocklists, settings, query DB
+#   $DATA_ROOT/pihole/etc-dnsmasq.d → extra dnsmasq config
+#
+# Start:
+#   cd src/network/pihole && docker compose --env-file ../../../storage.env --env-file .env up -d
 
 services:
   pihole:
@@ -13,8 +20,8 @@ services:
       TZ: America/Los_Angeles
       WEBPASSWORD: ${WEBPASSWORD}
     volumes:
-      - ./pihole/etc-pihole:/etc/pihole
-      - ./pihole/etc-dnsmasq.d:/etc/dnsmasq.d
+      - ${DATA_ROOT:?Set DATA_ROOT in storage.env}/pihole/etc-pihole:/etc/pihole
+      - ${DATA_ROOT:?Set DATA_ROOT in storage.env}/pihole/etc-dnsmasq.d:/etc/dnsmasq.d
     restart: unless-stopped
 
 networks:

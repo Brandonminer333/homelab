@@ -1,15 +1,16 @@
 # Jellyfin — bind-mount stack for a headless Ubuntu homelab host.
 #
 # Fill in before first `docker compose up`:
-#   1. PUID / PGID — run `id -u` and `id -g` on the host for the user that will own ./config and ./cache
+#   1. PUID / PGID — run `id -u` and `id -g` on the host for the user that owns $DATA_ROOT/jellyfin
 #   2. Image tag — check https://github.com/jellyfin/jellyfin/releases for the current stable version
 #
-# Mount points:
-#   ./config                               → Jellyfin settings, database, metadata (read-write)
-#   ./cache                                → transcode and image cache (read-write)
-#   ../../../data/media/jellyfin/media/videos → video library (read-only) → /media/videos
+# Mount points (DATA_ROOT / MEDIA_ROOT come from storage.env at the repo root;
+# run ../../../scripts/init-storage.sh once so they exist with the right owner):
+#   $DATA_ROOT/jellyfin/config → Jellyfin settings, database, metadata (read-write)
+#   $DATA_ROOT/jellyfin/cache  → transcode and image cache (read-write)
+#   $MEDIA_ROOT/videos         → video library (read-only) → /media/videos
 #
-#   Video only — music lives in the navidrome stack (../../../data/media/navidrome/music).
+#   Video only — music lives in the navidrome stack ($MEDIA_ROOT/music).
 #
 # Access (nginx reverse proxy on Tailscale hostname):
 #   https://lenovoflakes.tail62b305.ts.net:8443/
@@ -21,6 +22,9 @@
 #
 #   Do NOT use `tailscale funnel` unless you intentionally want public internet
 #   exposure. Tailnet access is via MagicDNS + nginx.
+#
+# Start:
+#   cd src/media/jellyfin && docker compose --env-file ../../../storage.env up -d
 
 services:
   jellyfin:
@@ -36,9 +40,9 @@ services:
       TZ: America/Los_Angeles
       JELLYFIN_PublishedServerUrl: https://lenovoflakes.tail62b305.ts.net:8443
     volumes:
-      - ./config:/config
-      - ./cache:/cache
-      - ../../../data/media/jellyfin/media/videos:/media/videos:ro
+      - ${DATA_ROOT:?Set DATA_ROOT in storage.env}/jellyfin/config:/config
+      - ${DATA_ROOT:?Set DATA_ROOT in storage.env}/jellyfin/cache:/cache
+      - ${MEDIA_ROOT:?Set MEDIA_ROOT in storage.env}/videos:/media/videos:ro
     networks:
       - homelab
     # Intel QuickSync hardware transcoding (optional):

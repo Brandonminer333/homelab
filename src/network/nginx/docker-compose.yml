@@ -1,3 +1,6 @@
+# No $DATA_ROOT mounts: nginx keeps no state. The config is git-tracked and the
+# TLS certs are managed on the host by Tailscale.
+
 services:
   nginx:
     image: nginx:latest

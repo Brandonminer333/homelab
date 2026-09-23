@@ -2,17 +2,16 @@
 #
 # Fill in before first `docker compose up`:
 #   1. cp .env.example .env   # PUID / PGID from `id -u` / `id -g` on the host
-#   2. Make sure both bind-mount sources exist and are owned by that user:
-#        mkdir -p ../../../data/media/navidrome/metadata ../../../data/media/navidrome/music
-#        sudo chown -R "$(id -u):$(id -g)" ../../../data/media/navidrome
-#      Both are kept in git via .gitkeep, so a pull normally creates them. Any
-#      path Docker has to create itself lands as root, Navidrome runs as PUID,
-#      cannot create navidrome.db, and SQLite reports "unable to open database
-#      file" in a restart loop. Re-run the chown after changing these paths.
+#   2. Create both bind-mount sources owned by that user:
+#        sudo ../../../scripts/init-storage.sh
+#      Any path Docker has to create itself lands as root, Navidrome runs as
+#      PUID, cannot create navidrome.db, and SQLite reports "unable to open
+#      database file" in a restart loop. Re-run that script after changing any
+#      path in storage.env.
 #
-# Mount points:
-#   ../../../data/media/navidrome/metadata → DB, cache, transcoded artwork (read-write)
-#   ../../../data/media/navidrome/music    → music library (read-only) → /music
+# Mount points (DATA_ROOT / MEDIA_ROOT come from storage.env at the repo root):
+#   $DATA_ROOT/navidrome/metadata → DB, cache, transcoded artwork (read-write)
+#   $MEDIA_ROOT/music             → music library (read-only) → /music
 #
 #   Navidrome embeds SQLite — the DB is a file in /data, so there is no separate
 #   database container (unlike the nextcloud stack).
@@ -34,7 +33,7 @@
 #   The first account created via the web UI is the admin.
 #
 # Start:
-#   cd src/media/navidrome && docker compose up -d
+#   cd src/media/navidrome && docker compose --env-file ../../../storage.env --env-file .env up -d
 
 services:
   navidrome:
@@ -60,8 +59,8 @@ services:
       # unless a Last.fm / Spotify key is added here.
       ND_COVERARTPRIORITY: cover.*, folder.*, front.*, embedded
     volumes:
-      - ../../../data/media/navidrome/metadata:/data
-      - ../../../data/media/navidrome/music:/music:ro
+      - ${DATA_ROOT:?Set DATA_ROOT in storage.env}/navidrome/metadata:/data
+      - ${MEDIA_ROOT:?Set MEDIA_ROOT in storage.env}/music:/music:ro
     networks:
       - homelab
     labels:

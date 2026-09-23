@@ -12,6 +12,9 @@
 #
 # This script is executed from the bind-mounted repo so git pulls pick up
 # logic changes without rebuilding the image.
+#
+# Every compose call gets storage.env (DATA_ROOT / MEDIA_ROOT) as an extra
+# --env-file, so bind mounts resolve to the HDD without per-stack duplication.
 set -eu
 
 REPO_DIR="${REPO_DIR:-/homelab}"
@@ -92,16 +95,27 @@ compose_project_dir() {
 # --project-directory uses HOST_REPO_DIR so compose matches containers labeled
 # with the host clone path. Without an explicit --env-file, compose looks for
 # .env under HOST_REPO_DIR, which does not exist inside this container.
+#
+# storage.env (DATA_ROOT / MEDIA_ROOT) is passed first so every stack resolves
+# its bind mounts; the stack .env comes last because later files win.
 compose_invoke() {
   dir="$1"
   shift
   local_file="$(compose_file "$dir")" || return 1
+  proj="$(compose_project_dir "$dir")"
+  storage_env="${REPO_DIR}/storage.env"
   env_file="${REPO_DIR}/${dir}/.env"
-  if [ -f "$env_file" ]; then
-    docker compose -f "$local_file" --project-directory "$(compose_project_dir "$dir")" \
+  if [ -f "$storage_env" ] && [ -f "$env_file" ]; then
+    docker compose -f "$local_file" --project-directory "$proj" \
+      --env-file "$storage_env" --env-file "$env_file" "$@"
+  elif [ -f "$storage_env" ]; then
+    docker compose -f "$local_file" --project-directory "$proj" \
+      --env-file "$storage_env" "$@"
+  elif [ -f "$env_file" ]; then
+    docker compose -f "$local_file" --project-directory "$proj" \
       --env-file "$env_file" "$@"
   else
-    docker compose -f "$local_file" --project-directory "$(compose_project_dir "$dir")" "$@"
+    docker compose -f "$local_file" --project-directory "$proj" "$@"
   fi
 }
 
@@ -149,12 +163,15 @@ stack_container_ids() {
 }
 
 # True when the compose file requires .env secrets but .env is missing.
+# DATA_ROOT / MEDIA_ROOT are excluded: they come from the repo-root storage.env,
+# so a stack can require them without having a .env of its own.
 stack_env_missing() {
   dir="$1"
   stack_root="${REPO_DIR}/${dir}"
   local_file="$(compose_file "$dir")" || return 1
   [ -f "${stack_root}/.env" ] && return 1
-  grep -qE '\$\{[A-Za-z_][A-Za-z0-9_]*:\?' "$local_file" 2>/dev/null
+  grep -oE '\$\{[A-Za-z_][A-Za-z0-9_]*:\?' "$local_file" 2>/dev/null \
+    | grep -vqE '^\$\{(DATA_ROOT|MEDIA_ROOT):\?$'
 }
 
 # Apply compose up -d. On success prints one of: started, recreated, unchanged.

@@ -8,8 +8,11 @@
 # Publish (from another container on the homelab network):
 #   curl -d "hello" http://ntfy/homelab
 #
+# Layout (DATA_ROOT comes from storage.env at the repo root):
+#   $DATA_ROOT/ntfy/cache → message cache and attachments
+#
 # Start:
-#   cd src/ci-cd/ntfy && docker compose up -d
+#   cd src/ci-cd/ntfy && docker compose --env-file ../../../storage.env up -d
 
 services:
   ntfy:
@@ -24,7 +27,7 @@ services:
       NTFY_ATTACHMENT_CACHE_DIR: /var/cache/ntfy/attachments
       # No auth-file / tokens — rely on Tailscale ACLs for exposure.
     volumes:
-      - ./cache:/var/cache/ntfy
+      - ${DATA_ROOT:?Set DATA_ROOT in storage.env}/ntfy/cache:/var/cache/ntfy
     ports:
       - "2586:80"
     networks:

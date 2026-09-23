@@ -1,7 +1,7 @@
 # qBittorrent behind Proton VPN (Gluetun) + Prowlarr + FlareSolverr
 #
 # Fill in before first `docker compose up`:
-#   1. PUID / PGID — on the Lenovo: `id -u` and `id -g` for the user that owns ./config and ../../data/qbittorrent
+#   1. PUID / PGID — on the Lenovo: `id -u` and `id -g` for the user that owns $DATA_ROOT/qbittorrent
 #   2. WIREGUARD_PRIVATE_KEY — from your Proton *.conf [Interface] PrivateKey line only.
 #      Gluetun (protonvpn provider) does NOT mount the .conf. Ignore Address, DNS, and [Peer];
 #      Gluetun picks Proton servers itself. Example .env:
@@ -12,10 +12,12 @@
 #   4. qBittorrent WebUI → enable "Bypass authentication for clients on localhost"
 #      so Gluetun can push the forwarded listen port via the WebUI API.
 #
-# Layout:
-#   ./config                           → qBittorrent settings (read-write)
-#   ./prowlarr/config                  → Prowlarr settings (read-write)
-#   ../../data/qbittorrent/torrents    → all torrent I/O (mounted as /downloads)
+# Layout (DATA_ROOT comes from storage.env at the repo root; run
+# ../../scripts/init-storage.sh once so these exist owned by PUID:PGID):
+#   $DATA_ROOT/qbittorrent/config    → qBittorrent settings (read-write)
+#   $DATA_ROOT/prowlarr/config       → Prowlarr settings (read-write)
+#   $DATA_ROOT/gluetun               → Gluetun state (read-write)
+#   $DATA_ROOT/qbittorrent/downloads → all torrent I/O (mounted as /downloads)
 #
 # Access (localhost + SSH forward — not on homelab network, not through Tailscale):
 #   qBittorrent WebUI → 127.0.0.1:8080
@@ -35,6 +37,9 @@
 #   Download client → qBittorrent: http://127.0.0.1:8080
 #   Indexer proxy  → FlareSolverr: http://127.0.0.1:8191
 #   Tag indexers that need Cloudflare bypass with that proxy tag.
+#
+# Start:
+#   cd src/qbittorrent && docker compose --env-file ../../storage.env --env-file .env up -d
 
 services:
   gluetun:
@@ -64,7 +69,7 @@ services:
       VPN_PORT_FORWARDING_UP_COMMAND: /bin/sh -c 'wget -O- -nv --retry-connrefused --post-data "json={\"listen_port\":{{PORT}},\"current_network_interface\":\"{{VPN_INTERFACE}}\",\"random_port\":false,\"upnp\":false}" http://127.0.0.1:8080/api/v2/app/setPreferences'
       VPN_PORT_FORWARDING_DOWN_COMMAND: /bin/sh -c 'wget -O- -nv --retry-connrefused --post-data "json={\"listen_port\":0,\"current_network_interface\":\"lo\"}" http://127.0.0.1:8080/api/v2/app/setPreferences'
     volumes:
-      - ./gluetun:/gluetun
+      - ${DATA_ROOT:?Set DATA_ROOT in storage.env}/gluetun:/gluetun
 
   qbittorrent:
     image: linuxserver/qbittorrent:latest
@@ -81,9 +86,9 @@ services:
       WEBUI_PORT: 8080
       TORRENTING_PORT: 6881
     volumes:
-      - ./config:/config
-      # Single mount so default SavePath /downloads lands in ../../data/qbittorrent/torrents
-      - ../../data/qbittorrent/torrents:/downloads
+      - ${DATA_ROOT:?Set DATA_ROOT in storage.env}/qbittorrent/config:/config
+      # Single mount so default SavePath /downloads lands in $DATA_ROOT/qbittorrent/downloads
+      - ${DATA_ROOT:?Set DATA_ROOT in storage.env}/qbittorrent/downloads:/downloads
 
   prowlarr:
     image: linuxserver/prowlarr:latest
@@ -100,7 +105,7 @@ services:
       PGID: ${PGID:-1000}
       TZ: America/Los_Angeles
     volumes:
-      - ./prowlarr/config:/config
+      - ${DATA_ROOT:?Set DATA_ROOT in storage.env}/prowlarr/config:/config
 
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest

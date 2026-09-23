@@ -2,13 +2,8 @@
 __pycache__/
 .git-sync-status
 
-src/Sanguine/media/ # media files are not tracked, too big
-src/Clavicus Vile/data/ # torrent downloads are not tracked, too big
-
-# Persistent service data under ./data — keep directory trees via .gitkeep
-data/**
-!data/**/
-!data/**/.gitkeep
+# Persistent service data lives outside the repo, under the DATA_ROOT set in
+# storage.env. Nothing to ignore here; scripts/init-storage.sh creates the tree.
 
 src/homepage/config/logs/** # Homepage runtime logs — keep directory via .gitkeep
 !src/homepage/config/logs/

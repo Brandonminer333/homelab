@@ -5,8 +5,8 @@
 #   2. Set JWT_SECRET_KEY (see .env.example)
 #   3. Leave OPEN_REGISTRATION=true until you create your account, then set false
 #
-# Layout:
-#   ../../data/kitchenowl/data → SQLite DB and uploads (read-write)
+# Layout (DATA_ROOT comes from storage.env at the repo root):
+#   $DATA_ROOT/kitchenowl → SQLite DB and uploads (read-write)
 #
 # Disabled: nginx no longer publishes :8449 or proxies to this container.
 # Do not start until the nginx server block and port mapping are restored.
@@ -22,7 +22,7 @@
 #   The first account created via the web UI is the household admin.
 #
 # Start (only after nginx is wired back up):
-#   cd src/kitchenowl && docker compose up -d
+#   cd src/kitchenowl && docker compose --env-file ../../storage.env --env-file .env up -d
 
 # Image is pinned: v0.7.5+ (Python 3.14, currently `latest`) SIGILLs in
 # `flask db upgrade` on this host ("Illegal instruction (core dumped)").
@@ -41,7 +41,7 @@ services:
       # true for first account; set false in .env after signup and recreate.
       OPEN_REGISTRATION: ${OPEN_REGISTRATION:-true}
     volumes:
-      - ../../data/kitchenowl/data:/data
+      - ${DATA_ROOT:?Set DATA_ROOT in storage.env}/kitchenowl:/data
     networks:
       - homelab
     labels:

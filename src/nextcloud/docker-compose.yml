@@ -7,17 +7,13 @@
 #   3. Set NEXTCLOUD_ADMIN_USER / NEXTCLOUD_ADMIN_PASSWORD — first admin account.
 #      These are read on the first start only; afterwards use
 #      `docker exec -u www-data nextcloud php occ user:resetpassword USER`
-#   4. If data/nextcloud/db still has MariaDB files from the old stack, wipe it.
-#      Postgres will refuse to start on a MySQL datadir.
+#   4. If $DATA_ROOT/nextcloud/db still has MariaDB files from the old stack,
+#      wipe it. Postgres will refuse to start on a MySQL datadir.
 #
-# Layout:
-#   ../../data/nextcloud/html → Nextcloud source, config, apps (/var/www/html)
-#   ../../data/nextcloud/data → user files (/var/www/data, outside the webroot)
-#   ../../data/nextcloud/db   → Postgres data files
-#
-# html/ carries no .gitkeep on purpose: the entrypoint rsyncs the release over
-# /var/www/html with --delete, which would remove the tracked file and leave the
-# server's clone permanently dirty. Docker creates the bind source on first up.
+# Layout (DATA_ROOT comes from storage.env at the repo root):
+#   $DATA_ROOT/nextcloud/html → Nextcloud source, config, apps (/var/www/html)
+#   $DATA_ROOT/nextcloud/data → user files (/var/www/data, outside the webroot)
+#   $DATA_ROOT/nextcloud/db   → Postgres data files
 #
 # Access (nginx reverse proxy on Tailscale hostname):
 #   https://lenovoflakes.tail62b305.ts.net:8444/  Nextcloud
@@ -39,7 +35,7 @@
 #   (WOPI callbacks cannot use the Docker-internal name).
 #
 # Start:
-#   cd src/nextcloud && docker compose up -d
+#   cd src/nextcloud && docker compose --env-file ../../storage.env --env-file .env up -d
 
 services:
   nextcloud:
@@ -78,8 +74,8 @@ services:
       # 0 disables Apache's LimitRequestBody so large library uploads are not cut off.
       APACHE_BODY_LIMIT: 0
     volumes:
-      - ../../data/nextcloud/html:/var/www/html
-      - ../../data/nextcloud/data:/var/www/data
+      - ${DATA_ROOT:?Set DATA_ROOT in storage.env}/nextcloud/html:/var/www/html
+      - ${DATA_ROOT:?Set DATA_ROOT in storage.env}/nextcloud/data:/var/www/data
       - ./hooks:/docker-entrypoint-hooks.d
     depends_on:
       nextcloud-db:
@@ -110,8 +106,8 @@ services:
     environment:
       TZ: America/Los_Angeles
     volumes:
-      - ../../data/nextcloud/html:/var/www/html
-      - ../../data/nextcloud/data:/var/www/data
+      - ${DATA_ROOT:?Set DATA_ROOT in storage.env}/nextcloud/html:/var/www/html
+      - ${DATA_ROOT:?Set DATA_ROOT in storage.env}/nextcloud/data:/var/www/data
     depends_on:
       nextcloud:
         condition: service_started
@@ -153,7 +149,7 @@ services:
       POSTGRES_USER: nextcloud
       POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASSWORD:?Set NEXTCLOUD_DB_PASSWORD in .env}
     volumes:
-      - ../../data/nextcloud/db:/var/lib/postgresql/data
+      - ${DATA_ROOT:?Set DATA_ROOT in storage.env}/nextcloud/db:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U nextcloud -d nextcloud"]
       interval: 10s

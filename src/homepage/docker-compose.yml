@@ -4,6 +4,9 @@
 #   ./config → Homepage YAML config (read-write)
 #   /var/run/docker.sock → Docker status / stats (read-only)
 #
+#   Stays in-repo rather than under $DATA_ROOT: config/ is git-tracked YAML that
+#   deploys with the repo, not runtime state.
+#
 # Access (nginx reverse proxy on Tailscale hostname):
 #   https://lenovoflakes.tail62b305.ts.net/
 #

@@ -10,6 +10,11 @@
 #   or force-recreate runs:true. Higher priority first on up; reverse on down;
 #   depends-on enforced. Per-stack compose failures ntfy and continue. Script
 #   is read from the bind mount. This stack is never torn down by itself.
+#   Every stack is brought up with storage.env as an extra --env-file, so
+#   DATA_ROOT / MEDIA_ROOT resolve from the repo root rather than per-stack .env.
+#
+# No $DATA_ROOT mounts here: this stack needs the repo clone and the Docker
+# socket, and holds no state of its own.
 #
 # Before first up:
 #   cp .env.example .env   # set HOMELAB_PATH to the host clone path

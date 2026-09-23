@@ -1,5 +1,5 @@
 #!/bin/sh
-# Bind-mounted ../../data/nextcloud/data is often root:root (Docker created the
+# Bind-mounted $DATA_ROOT/nextcloud/data is often root:root (Docker created the
 # host path). The installer runs as www-data and refuses a non-writable data dir.
 set -eu
 mkdir -p /var/www/data
